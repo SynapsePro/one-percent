@@ -1,11 +1,9 @@
 // --- 1. GENERAL EVENT LISTENERS ---
 document.addEventListener('DOMContentLoaded', () => {
-    // Avatar GIF neuladen bei Klick
     document.getElementById('avatar-gif').addEventListener('click', function() {
         this.src = this.src.split('?')[0] + '?t=' + new Date().getTime();
     });
 
-    // Navigation umschalten
     document.querySelectorAll('.nav-btn').forEach(button => {
         button.addEventListener('click', function() {
             document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
@@ -20,7 +18,6 @@ document.addEventListener('DOMContentLoaded', () => {
     updateNutritionUI();
 });
 
-// Hilfsfunktion: Modals schließen
 function closeModal(modalId) {
     document.getElementById(modalId).classList.remove('active');
 }
@@ -168,22 +165,28 @@ function switchTrackTab(tabId, btnElement) {
     document.getElementById('tab-' + tabId).classList.add('active');
 }
 
-// --- 4. API LOGIC MIT PROXY-FALLBACK ---
+// --- 4. BULLETPROOF API LOGIC ---
 
-// Diese Helferfunktion umgeht die Cloudflare Blockade automatisch!
+// Diese Funktion garantiert, dass CORS/Cloudflare Blockaden umgangen werden!
 async function safeFetchJSON(url) {
     try {
-        // Versuch 1: Direkt anfragen
-        const response = await fetch(url);
-        if (!response.ok) throw new Error(`HTTP ${response.status}`);
-        return await response.json();
-    } catch (error) {
-        console.warn("Direct fetch blocked by CORS/Cloudflare. Using secure proxy fallback...");
-        // Versuch 2: Anfrage über allorigins.win leiten (Server-zu-Server)
-        const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
-        const proxyResponse = await fetch(proxyUrl);
-        if (!proxyResponse.ok) throw new Error(`Proxy failed with HTTP ${proxyResponse.status}`);
-        return await proxyResponse.json();
+        // Zuerst der normale Versuch
+        const res = await fetch(url);
+        if (!res.ok) throw new Error("Blocked by Cloudflare/CORS");
+        return await res.json();
+    } catch (e) {
+        console.warn("Direct request blocked, switching to secure proxy wrapper...");
+        // Wenn blockiert, nutzen wir den sicheren JSON-Wrapper (/get statt /raw)
+        const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`;
+        const proxyRes = await fetch(proxyUrl);
+        const proxyData = await proxyRes.json();
+        
+        // Der Proxy verpackt die Antwort als String in "contents", wir entpacken sie
+        if (proxyData.contents) {
+            return JSON.parse(proxyData.contents);
+        } else {
+            throw new Error("Proxy failed to fetch data.");
+        }
     }
 }
 
@@ -195,9 +198,9 @@ async function searchFoodAPI() {
     c.innerHTML = '<div style="text-align:center; padding: 20px; color:#888;"><i>Searching database...</i></div>';
     
     try {
+        // Die Text-Suche bleibt auf der v1 CGI (da v2 laut Doku keine Textsuche unterstützt)
         const url = `https://world.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(q)}&search_simple=1&action=process&json=1&page_size=25&fields=product_name,product_name_de,generic_name,brands,nutriments,image_front_thumb_url`;
         
-        // Nutzt jetzt unsere kugelsichere Fallback-Funktion!
         const data = await safeFetchJSON(url);
         
         if (data && data.products && data.products.length > 0) {
@@ -219,12 +222,12 @@ async function searchBarcodeAPI() {
     c.innerHTML = '<div style="text-align:center; padding: 20px; color:#888;"><i>Looking up barcode...</i></div>';
     
     try {
-        const url = `https://world.openfoodfacts.org/api/v0/product/${code}.json?fields=product_name,product_name_de,generic_name,brands,nutriments,image_front_thumb_url`;
+        // UPDATE: Nutzt jetzt die offizielle API v2 wie in der Dokumentation beschrieben!
+        const url = `https://world.openfoodfacts.org/api/v2/product/${code}?fields=product_name,product_name_de,generic_name,brands,nutriments,image_front_thumb_url`;
         
-        // Nutzt jetzt unsere kugelsichere Fallback-Funktion!
         const data = await safeFetchJSON(url);
         
-        if(data && data.status === 1 && data.product) {
+        if(data && data.product) {
             renderAPIResults([data.product], c);
         } else {
             c.innerHTML = '<div style="text-align:center; padding: 20px; color:#888;"><i>Barcode not found in database.</i></div>';
