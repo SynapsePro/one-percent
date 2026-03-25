@@ -165,58 +165,34 @@ function switchTrackTab(tabId, btnElement) {
     document.getElementById('tab-' + tabId).classList.add('active');
 }
 
-// --- 4. ULTIMATE API LOGIC (WITH OFF-STAGING FALLBACK) ---
+// --- 4. API LOGIC (MIT ALL-ORIGINS FALLBACK) ---
 
-async function fetchFromOFF(endpoint, query) {
-    const prodUrl = `https://world.openfoodfacts.org${endpoint}?${query}`;
-    const stagingUrl = `https://world.openfoodfacts.net${endpoint}?${query}`;
-
+async function safeFetchJSON(url) {
     try {
-        // VERSUCH 1: Der normale Server
-        const prodResponse = await fetch(prodUrl, {
-            headers: { 'Accept': 'application/json' }
-        });
-
-        if (prodResponse.status === 429) throw new Error("RATE_LIMIT");
-
-        const prodText = await prodResponse.text();
-
-        // Prüfen ob Cloudflare uns sofort aussperrt (Text beginnt mit HTML "<")
-        if (!prodText.trim().startsWith('<')) {
-            return JSON.parse(prodText); // Alles super, JSON zurückgeben!
-        }
-        console.warn("Hauptserver durch Cloudflare blockiert. Wechsle sofort zu Staging-Server...");
+        // Versuch 1: Direkte Anfrage an die Datenbank
+        const response = await fetch(url);
+        const text = await response.text();
+        
+        if (text.trim().startsWith('<')) throw new Error("Cloudflare Block");
+        return JSON.parse(text);
+        
     } catch (e) {
-        if (e.message === "RATE_LIMIT") {
-            throw new Error("Du suchst zu schnell! Bitte kurz warten.");
-        }
-        // Fehler beim Hauptserver ignorieren, wir versuchen es gleich mit Staging nochmal
-    }
-
-    // VERSUCH 2: Fallback auf den offiziellen Test-Server (Staging)
-    // Hier ist der Bot-Schutz lockerer und wir übergeben den Entwickler-Login "off:off"
-    try {
-        const stagingResponse = await fetch(stagingUrl, {
-            headers: {
-                'Accept': 'application/json',
-                'Authorization': 'Basic ' + btoa('off:off') // btoa codiert "off:off" in Base64
+        // Versuch 2: Wenn "Load failed" kommt, greift dieser Proxy ein!
+        console.warn("Direkte Anfrage blockiert. Nutze sicheren Proxy...");
+        try {
+            // AllOrigins umgeht CORS und IP-Sperren komplett
+            const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`;
+            const proxyRes = await fetch(proxyUrl);
+            const proxyData = await proxyRes.json();
+            
+            // Die echten Daten stecken bei AllOrigins im "contents" Feld
+            if (proxyData.contents && !proxyData.contents.startsWith('<')) {
+                return JSON.parse(proxyData.contents);
             }
-        });
-
-        if (stagingResponse.status === 429) {
-            throw new Error("Test-Server Limit erreicht. Bitte kurz warten.");
+            throw new Error("Datenbank überlastet.");
+        } catch (proxyErr) {
+            throw new Error("Keine Verbindung zur Datenbank möglich.");
         }
-
-        const stagingText = await stagingResponse.text();
-
-        if (stagingText.trim().startsWith('<')) {
-            throw new Error("Komplett gesperrt. Bitte probiere es in 1-2 Minuten nochmal.");
-        }
-
-        return JSON.parse(stagingText);
-
-    } catch (e) {
-        throw new Error(e.message || "Netzwerkfehler beim Abrufen der API.");
     }
 }
 
@@ -225,21 +201,20 @@ async function searchFoodAPI() {
     const c = document.getElementById('api-results-container');
     if(!q) return;
     
-    c.innerHTML = '<div style="text-align:center; padding: 20px; color:#888;"><i>Suche in Datenbank...</i></div>';
+    c.innerHTML = '<div style="text-align:center; padding: 20px; color:#888;"><i>Lade Daten...</i></div>';
     
     try {
-        const endpoint = "/cgi/search.pl";
-        const query = `search_terms=${encodeURIComponent(q)}&search_simple=1&action=process&json=1&page_size=25&fields=product_name,product_name_de,generic_name,brands,nutriments,image_front_thumb_url&app_name=MoritzApp&app_version=1.5`;
-        
-        const data = await fetchFromOFF(endpoint, query);
+        // URL für die Suche (Text)
+        const url = `https://world.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(q)}&search_simple=1&action=process&json=1&page_size=20`;
+        const data = await safeFetchJSON(url);
         
         if (data && data.products && data.products.length > 0) {
             renderAPIResults(data.products, c);
         } else {
-            c.innerHTML = '<div style="text-align:center; padding: 20px; color:#888;"><i>Keine Produkte gefunden.</i></div>';
+            c.innerHTML = '<div style="text-align:center; padding: 20px; color:#888;"><i>Nichts gefunden.</i></div>';
         }
     } catch(e) { 
-        c.innerHTML = `<div style="color:#d32f2f; font-size:0.85rem; padding: 10px; background:#ffebeb; border-radius:8px; line-height: 1.4;"><b>Fehler:</b><br>${e.message}</div>`; 
+        c.innerHTML = `<div style="color:red; text-align:center; padding:10px;"><b>FEHLER:</b><br>${e.message}</div>`; 
     }
 }
 
@@ -248,13 +223,12 @@ async function searchBarcodeAPI() {
     const c = document.getElementById('barcode-results-container');
     if(!code) return;
     
-    c.innerHTML = '<div style="text-align:center; padding: 20px; color:#888;"><i>Suche Barcode...</i></div>';
+    c.innerHTML = '<div style="text-align:center; padding: 20px; color:#888;"><i>Prüfe Barcode...</i></div>';
     
     try {
-        const endpoint = `/api/v2/product/${code}`;
-        const query = `fields=product_name,product_name_de,generic_name,brands,nutriments,image_front_thumb_url&app_name=MoritzApp&app_version=1.5`;
-        
-        const data = await fetchFromOFF(endpoint, query);
+        // WICHTIG: Das .json am Ende verhindert bei der V2 API den "Load failed" Fehler!
+        const url = `https://world.openfoodfacts.org/api/v2/product/${code}.json`;
+        const data = await safeFetchJSON(url);
         
         if(data && data.product) {
             renderAPIResults([data.product], c);
@@ -262,7 +236,7 @@ async function searchBarcodeAPI() {
             c.innerHTML = '<div style="text-align:center; padding: 20px; color:#888;"><i>Barcode nicht in der Datenbank gefunden.</i></div>';
         }
     } catch(e) { 
-        c.innerHTML = `<div style="color:#d32f2f; font-size:0.85rem; padding: 10px; background:#ffebeb; border-radius:8px; line-height: 1.4;"><b>Fehler:</b><br>${e.message}</div>`; 
+        c.innerHTML = `<div style="color:red; text-align:center; padding:10px;"><b>FEHLER:</b><br>${e.message}</div>`; 
     }
 }
 
@@ -283,13 +257,13 @@ function renderAPIResults(products, container) {
             const carb = p.nutriments.carbohydrates_100g || 0;
             const fat = p.nutriments.fat_100g || 0;
             
-            const imgUrl = p.image_front_thumb_url || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?ixlib=rb-4.0.3&auto=format&fit=crop&w=100&q=80'; 
+            const imgUrl = p.image_front_thumb_url || 'https://via.placeholder.com/50'; 
 
             currentSearchResults.push({ name: finalName, cal, pro, carb, fat });
             
             container.insertAdjacentHTML('beforeend', `
                 <div class="api-result-item" onclick="promptAmount(${idx})">
-                    <img src="${imgUrl}" alt="Food" class="api-result-img" loading="lazy" onerror="this.src='https://images.unsplash.com/photo-1546069901-ba9599a7e63c?ixlib=rb-4.0.3&auto=format&fit=crop&w=100&q=80'">
+                    <img src="${imgUrl}" alt="Food" class="api-result-img" loading="lazy">
                     <div class="api-result-info">
                         <span class="api-result-title">${finalName}</span>
                         <span class="api-result-macros">${Math.round(cal)} kcal | P:${Math.round(pro)}g | C:${Math.round(carb)}g | F:${Math.round(fat)}g</span>
