@@ -165,41 +165,40 @@ function switchTrackTab(tabId, btnElement) {
     document.getElementById('tab-' + tabId).classList.add('active');
 }
 
-// --- 4. ROBUST API LOGIC (NO MORE '<' ERRORS) ---
+
+// --- 4. ROBUST API LOGIC (REWORKED) ---
 
 async function safeFetchJSON(url) {
     try {
-        // Versuch 1: Direkte Abfrage
-        const res = await fetch(url);
-        const text = await res.text(); // Als Text lesen (verhindert den JSON Crash!)
-        
-        // Wenn der Text mit HTML beginnt, hat uns Cloudflare geblockt
-        if (text.trim().startsWith('<')) {
-            throw new Error("HTML_RECEIVED");
+        // Direkter Fetch ohne Proxy. OpenFoodFacts unterstützt CORS nativ.
+        const response = await fetch(url, {
+            method: 'GET',
+            headers: {
+                'Accept': 'application/json'
+            }
+        });
+
+        // 429 = Too Many Requests (Rate Limit: 10/min)
+        if (response.status === 429) {
+            throw new Error("Limit erreicht (Max. 10 Suchen pro Minute). Bitte warte kurz.");
         }
         
-        return JSON.parse(text); // Wenn alles gut ist, Text in JSON umwandeln
+        if (!response.ok) {
+            throw new Error(`Netzwerkfehler oder Produkt nicht gefunden (${response.status}).`);
+        }
+
+        const text = await response.text();
+        
+        // Wenn Cloudflare dazwischen geht, sendet es HTML (Captcha) statt JSON
+        if (text.trim().startsWith('<')) {
+            throw new Error("Anti-Bot-Schutz aktiv. Bitte 1 Minute warten und erneut versuchen.");
+        }
+        
+        return JSON.parse(text);
         
     } catch (e) {
-        console.warn("Direct request blocked or failed. Switching to proxy...");
-        
-        try {
-            // Versuch 2: Sicherer Proxy (corsproxy.io ist stabiler als allorigins)
-            const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(url)}`;
-            const proxyRes = await fetch(proxyUrl);
-            const proxyText = await proxyRes.text();
-            
-            // Auch hier prüfen, ob der Proxy HTML zurückgegeben hat
-            if (proxyText.trim().startsWith('<')) {
-                throw new Error("PROXY_BLOCKED");
-            }
-            
-            return JSON.parse(proxyText);
-            
-        } catch (proxyError) {
-            // Sauberer Fehler für den Nutzer (ohne kryptische '<' Zeichen)
-            throw new Error("Datenbank überlastet (Anti-Spam). Bitte warte ein paar Sekunden.");
-        }
+        console.error("API Fehler:", e);
+        throw e; // Weiterleiten an die aufrufende Funktion
     }
 }
 
@@ -208,20 +207,22 @@ async function searchFoodAPI() {
     const c = document.getElementById('api-results-container');
     if(!q) return;
     
-    c.innerHTML = '<div style="text-align:center; padding: 20px; color:#888;"><i>Searching database...</i></div>';
+    c.innerHTML = '<div style="text-align:center; padding: 20px; color:#888;"><i>Suche in Datenbank...</i></div>';
     
     try {
-        const url = `https://world.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(q)}&search_simple=1&action=process&json=1&page_size=25&fields=product_name,product_name_de,generic_name,brands,nutriments,image_front_thumb_url`;
+        // App-Identifier anhängen (Best Practice laut OFF Docs)
+        const appInfo = "&app_name=Moritz1PercentApp&app_version=1.0";
+        const url = `https://world.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(q)}&search_simple=1&action=process&json=1&page_size=25&fields=product_name,product_name_de,generic_name,brands,nutriments,image_front_thumb_url${appInfo}`;
         
         const data = await safeFetchJSON(url);
         
         if (data && data.products && data.products.length > 0) {
             renderAPIResults(data.products, c);
         } else {
-            c.innerHTML = '<div style="text-align:center; padding: 20px; color:#888;"><i>No products found. Try another keyword.</i></div>';
+            c.innerHTML = '<div style="text-align:center; padding: 20px; color:#888;"><i>Keine Produkte gefunden.</i></div>';
         }
     } catch(e) { 
-        c.innerHTML = `<div style="color:red; font-size:0.85rem; padding: 10px; background:#ffebeb; border-radius:8px;">API Error: ${e.message}</div>`; 
+        c.innerHTML = `<div style="color:#d32f2f; font-size:0.85rem; padding: 10px; background:#ffebeb; border-radius:8px;">Fehler: ${e.message}</div>`; 
     }
 }
 
@@ -230,20 +231,21 @@ async function searchBarcodeAPI() {
     const c = document.getElementById('barcode-results-container');
     if(!code) return;
     
-    c.innerHTML = '<div style="text-align:center; padding: 20px; color:#888;"><i>Looking up barcode...</i></div>';
+    c.innerHTML = '<div style="text-align:center; padding: 20px; color:#888;"><i>Suche Barcode...</i></div>';
     
     try {
-        const url = `https://world.openfoodfacts.org/api/v2/product/${code}?fields=product_name,product_name_de,generic_name,brands,nutriments,image_front_thumb_url`;
+        const appInfo = "?app_name=Moritz1PercentApp&app_version=1.0";
+        const url = `https://world.openfoodfacts.org/api/v2/product/${code}${appInfo}&fields=product_name,product_name_de,generic_name,brands,nutriments,image_front_thumb_url`;
         
         const data = await safeFetchJSON(url);
         
         if(data && data.product) {
             renderAPIResults([data.product], c);
         } else {
-            c.innerHTML = '<div style="text-align:center; padding: 20px; color:#888;"><i>Barcode not found in database.</i></div>';
+            c.innerHTML = '<div style="text-align:center; padding: 20px; color:#888;"><i>Barcode nicht in der Datenbank gefunden.</i></div>';
         }
     } catch(e) { 
-        c.innerHTML = `<div style="color:red; font-size:0.85rem; padding: 10px; background:#ffebeb; border-radius:8px;">API Error: ${e.message}</div>`; 
+        c.innerHTML = `<div style="color:#d32f2f; font-size:0.85rem; padding: 10px; background:#ffebeb; border-radius:8px;">Fehler: ${e.message}</div>`; 
     }
 }
 
@@ -255,7 +257,7 @@ function renderAPIResults(products, container) {
 
     if(validProducts.length > 0) {
         validProducts.forEach((p, idx) => {
-            const nameFallback = p.product_name_de || p.product_name || p.generic_name || 'Unknown Food';
+            const nameFallback = p.product_name_de || p.product_name || p.generic_name || 'Unbekanntes Lebensmittel';
             const brand = p.brands ? ` (${p.brands.split(',')[0].trim()})` : '';
             const finalName = nameFallback + brand;
 
@@ -279,9 +281,11 @@ function renderAPIResults(products, container) {
             `);
         });
     } else { 
-        container.innerHTML = '<div style="text-align:center; padding: 20px; color:#888;"><i>No valid products with nutritional data found.</i></div>'; 
+        container.innerHTML = '<div style="text-align:center; padding: 20px; color:#888;"><i>Keine Produkte mit gültigen Nährwerten gefunden.</i></div>'; 
     }
 }
+
+// --- 5. MANUAL FOOD & MODAL LOGIC ---
 
 function submitManualFood() {
     const name = document.getElementById('man-name').value || 'Custom Food';
