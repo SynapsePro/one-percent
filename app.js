@@ -169,6 +169,7 @@ function switchTrackTab(tabId, btnElement) {
     document.getElementById('tab-' + tabId).classList.add('active');
 }
 
+// --- CORS & PREFLIGHT FIX: Keine Headers, keine extra Parameter mitsenden ---
 async function searchFoodAPI() {
     const q = document.getElementById('api-search-input').value.trim();
     const c = document.getElementById('api-results-container');
@@ -177,11 +178,11 @@ async function searchFoodAPI() {
     c.innerHTML = '<div style="text-align:center; padding: 20px; color:#888;"><i>Searching database...</i></div>';
     
     try {
-        // HIER SIND DIE NEUEN PARAMETER: &app_name=MoritzFitnessWeb&app_version=1.0
-        const url = `https://world.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(q)}&search_simple=1&action=process&json=1&page_size=25&fields=product_name,product_name_de,generic_name,brands,nutriments,image_front_thumb_url&app_name=MoritzFitnessWeb&app_version=1.0&_t=${Date.now()}`;
+        const url = `https://world.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(q)}&search_simple=1&action=process&json=1&page_size=25&fields=product_name,product_name_de,generic_name,brands,nutriments,image_front_thumb_url`;
         
-        const res = await fetch(url, { headers: { 'Accept': 'application/json' }});
+        const res = await fetch(url);
         if (!res.ok) throw new Error(`Server returned ${res.status}`);
+        
         const data = await res.json();
         
         if (data.products && data.products.length > 0) {
@@ -190,8 +191,8 @@ async function searchFoodAPI() {
             c.innerHTML = '<div style="text-align:center; padding: 20px; color:#888;"><i>No products found. Try another keyword.</i></div>';
         }
     } catch(e) { 
-        c.innerHTML = `<div style="color:red; font-size:0.85rem; padding: 10px; background:#ffebeb; border-radius:8px;">API Error: ${e.message}.<br><br><b>Tipp:</b> Versuch es in ein paar Sekunden nochmal (Anti-Spam Schutz der API).</div>`; 
-        console.error(e); 
+        c.innerHTML = `<div style="color:red; font-size:0.85rem; padding: 10px; background:#ffebeb; border-radius:8px;">API Error: ${e.message}</div>`; 
+        console.error("Fetch Error:", e); 
     }
 }
 
@@ -203,11 +204,11 @@ async function searchBarcodeAPI() {
     c.innerHTML = '<div style="text-align:center; padding: 20px; color:#888;"><i>Looking up barcode...</i></div>';
     
     try {
-        // HIER AUCH DIE NEUEN PARAMETER FÜR DEN BARCODE SCANNER
-        const url = `https://world.openfoodfacts.org/api/v0/product/${code}.json?fields=product_name,product_name_de,generic_name,brands,nutriments,image_front_thumb_url&app_name=MoritzFitnessWeb&app_version=1.0&_t=${Date.now()}`;
-        const res = await fetch(url, { headers: { 'Accept': 'application/json' }});
+        const url = `https://world.openfoodfacts.org/api/v0/product/${code}.json?fields=product_name,product_name_de,generic_name,brands,nutriments,image_front_thumb_url`;
         
+        const res = await fetch(url);
         if (!res.ok) throw new Error(`Server returned ${res.status}`);
+        
         const data = await res.json();
         
         if(data.status === 1 && data.product) {
@@ -217,7 +218,7 @@ async function searchBarcodeAPI() {
         }
     } catch(e) { 
         c.innerHTML = `<div style="color:red; font-size:0.85rem; padding: 10px; background:#ffebeb; border-radius:8px;">API Error: ${e.message}</div>`; 
-        console.error(e); 
+        console.error("Fetch Error:", e); 
     }
 }
 
