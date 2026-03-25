@@ -165,40 +165,46 @@ function switchTrackTab(tabId, btnElement) {
     document.getElementById('tab-' + tabId).classList.add('active');
 }
 
-
-// --- 4. ROBUST API LOGIC (REWORKED) ---
+// --- 4. ROBUST API LOGIC (WITH PROXY FALLBACK FOR 'FAILED TO FETCH') ---
 
 async function safeFetchJSON(url) {
+    let response;
+    
     try {
-        // Direkter Fetch ohne Proxy. OpenFoodFacts unterstützt CORS nativ.
-        const response = await fetch(url, {
-            method: 'GET',
-            headers: {
-                'Accept': 'application/json'
-            }
-        });
-
-        // 429 = Too Many Requests (Rate Limit: 10/min)
-        if (response.status === 429) {
-            throw new Error("Limit erreicht (Max. 10 Suchen pro Minute). Bitte warte kurz.");
-        }
-        
-        if (!response.ok) {
-            throw new Error(`Netzwerkfehler oder Produkt nicht gefunden (${response.status}).`);
-        }
-
-        const text = await response.text();
-        
-        // Wenn Cloudflare dazwischen geht, sendet es HTML (Captcha) statt JSON
-        if (text.trim().startsWith('<')) {
-            throw new Error("Anti-Bot-Schutz aktiv. Bitte 1 Minute warten und erneut versuchen.");
-        }
-        
-        return JSON.parse(text);
-        
+        // Versuch 1: Direkte Abfrage (ohne Headers, um CORS-Preflight zu vermeiden)
+        response = await fetch(url);
     } catch (e) {
-        console.error("API Fehler:", e);
-        throw e; // Weiterleiten an die aufrufende Funktion
+        // Wenn Cloudflare die IP hart blockiert, wirft fetch einen Error ("Failed to fetch")
+        console.warn("Direkte Verbindung blockiert. Versuche Proxy-Fallback...", e);
+        
+        try {
+            // Versuch 2: Ausweich-Proxy nutzen, falls die eigene IP gesperrt wurde
+            const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
+            response = await fetch(proxyUrl);
+        } catch (proxyError) {
+            throw new Error("Datenbank überlastet (Anti-Spam Limit). Bitte warte 1-2 Minuten.");
+        }
+    }
+
+    if (response.status === 429) {
+        throw new Error("Limit erreicht (Max. 10 Suchen pro Minute). Bitte warte kurz.");
+    }
+    
+    if (!response.ok) {
+        throw new Error(`Verbindungsfehler (${response.status}).`);
+    }
+
+    const text = await response.text();
+    
+    // Cloudflare Captcha-Abfang
+    if (text.trim().startsWith('<')) {
+        throw new Error("Anti-Bot-Schutz aktiv. Bitte 1 Minute warten und erneut versuchen.");
+    }
+    
+    try {
+        return JSON.parse(text);
+    } catch (parseError) {
+        throw new Error("Fehlerhafte Daten von der API empfangen.");
     }
 }
 
@@ -210,8 +216,7 @@ async function searchFoodAPI() {
     c.innerHTML = '<div style="text-align:center; padding: 20px; color:#888;"><i>Suche in Datenbank...</i></div>';
     
     try {
-        // App-Identifier anhängen (Best Practice laut OFF Docs)
-        const appInfo = "&app_name=Moritz1PercentApp&app_version=1.0";
+        const appInfo = "&app_name=Moritz1PercentApp&app_version=1.1";
         const url = `https://world.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(q)}&search_simple=1&action=process&json=1&page_size=25&fields=product_name,product_name_de,generic_name,brands,nutriments,image_front_thumb_url${appInfo}`;
         
         const data = await safeFetchJSON(url);
@@ -222,7 +227,7 @@ async function searchFoodAPI() {
             c.innerHTML = '<div style="text-align:center; padding: 20px; color:#888;"><i>Keine Produkte gefunden.</i></div>';
         }
     } catch(e) { 
-        c.innerHTML = `<div style="color:#d32f2f; font-size:0.85rem; padding: 10px; background:#ffebeb; border-radius:8px;">Fehler: ${e.message}</div>`; 
+        c.innerHTML = `<div style="color:#d32f2f; font-size:0.85rem; padding: 10px; background:#ffebeb; border-radius:8px; line-height: 1.4;"><b>Suchfehler:</b><br>${e.message}</div>`; 
     }
 }
 
@@ -234,7 +239,7 @@ async function searchBarcodeAPI() {
     c.innerHTML = '<div style="text-align:center; padding: 20px; color:#888;"><i>Suche Barcode...</i></div>';
     
     try {
-        const appInfo = "?app_name=Moritz1PercentApp&app_version=1.0";
+        const appInfo = "?app_name=Moritz1PercentApp&app_version=1.1";
         const url = `https://world.openfoodfacts.org/api/v2/product/${code}${appInfo}&fields=product_name,product_name_de,generic_name,brands,nutriments,image_front_thumb_url`;
         
         const data = await safeFetchJSON(url);
@@ -245,7 +250,7 @@ async function searchBarcodeAPI() {
             c.innerHTML = '<div style="text-align:center; padding: 20px; color:#888;"><i>Barcode nicht in der Datenbank gefunden.</i></div>';
         }
     } catch(e) { 
-        c.innerHTML = `<div style="color:#d32f2f; font-size:0.85rem; padding: 10px; background:#ffebeb; border-radius:8px;">Fehler: ${e.message}</div>`; 
+        c.innerHTML = `<div style="color:#d32f2f; font-size:0.85rem; padding: 10px; background:#ffebeb; border-radius:8px; line-height: 1.4;"><b>Barcodefehler:</b><br>${e.message}</div>`; 
     }
 }
 
