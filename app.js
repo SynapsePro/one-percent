@@ -165,27 +165,40 @@ function switchTrackTab(tabId, btnElement) {
     document.getElementById('tab-' + tabId).classList.add('active');
 }
 
-// --- 4. BULLETPROOF API LOGIC ---
+// --- 4. ROBUST API LOGIC (NO MORE '<' ERRORS) ---
 
-// Diese Funktion garantiert, dass CORS/Cloudflare Blockaden umgangen werden!
 async function safeFetchJSON(url) {
     try {
-        // Zuerst der normale Versuch
+        // Versuch 1: Direkte Abfrage
         const res = await fetch(url);
-        if (!res.ok) throw new Error("Blocked by Cloudflare/CORS");
-        return await res.json();
-    } catch (e) {
-        console.warn("Direct request blocked, switching to secure proxy wrapper...");
-        // Wenn blockiert, nutzen wir den sicheren JSON-Wrapper (/get statt /raw)
-        const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`;
-        const proxyRes = await fetch(proxyUrl);
-        const proxyData = await proxyRes.json();
+        const text = await res.text(); // Als Text lesen (verhindert den JSON Crash!)
         
-        // Der Proxy verpackt die Antwort als String in "contents", wir entpacken sie
-        if (proxyData.contents) {
-            return JSON.parse(proxyData.contents);
-        } else {
-            throw new Error("Proxy failed to fetch data.");
+        // Wenn der Text mit HTML beginnt, hat uns Cloudflare geblockt
+        if (text.trim().startsWith('<')) {
+            throw new Error("HTML_RECEIVED");
+        }
+        
+        return JSON.parse(text); // Wenn alles gut ist, Text in JSON umwandeln
+        
+    } catch (e) {
+        console.warn("Direct request blocked or failed. Switching to proxy...");
+        
+        try {
+            // Versuch 2: Sicherer Proxy (corsproxy.io ist stabiler als allorigins)
+            const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(url)}`;
+            const proxyRes = await fetch(proxyUrl);
+            const proxyText = await proxyRes.text();
+            
+            // Auch hier prüfen, ob der Proxy HTML zurückgegeben hat
+            if (proxyText.trim().startsWith('<')) {
+                throw new Error("PROXY_BLOCKED");
+            }
+            
+            return JSON.parse(proxyText);
+            
+        } catch (proxyError) {
+            // Sauberer Fehler für den Nutzer (ohne kryptische '<' Zeichen)
+            throw new Error("Datenbank überlastet (Anti-Spam). Bitte warte ein paar Sekunden.");
         }
     }
 }
@@ -198,7 +211,6 @@ async function searchFoodAPI() {
     c.innerHTML = '<div style="text-align:center; padding: 20px; color:#888;"><i>Searching database...</i></div>';
     
     try {
-        // Die Text-Suche bleibt auf der v1 CGI (da v2 laut Doku keine Textsuche unterstützt)
         const url = `https://world.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(q)}&search_simple=1&action=process&json=1&page_size=25&fields=product_name,product_name_de,generic_name,brands,nutriments,image_front_thumb_url`;
         
         const data = await safeFetchJSON(url);
@@ -210,7 +222,6 @@ async function searchFoodAPI() {
         }
     } catch(e) { 
         c.innerHTML = `<div style="color:red; font-size:0.85rem; padding: 10px; background:#ffebeb; border-radius:8px;">API Error: ${e.message}</div>`; 
-        console.error("Fetch Error:", e); 
     }
 }
 
@@ -222,7 +233,6 @@ async function searchBarcodeAPI() {
     c.innerHTML = '<div style="text-align:center; padding: 20px; color:#888;"><i>Looking up barcode...</i></div>';
     
     try {
-        // UPDATE: Nutzt jetzt die offizielle API v2 wie in der Dokumentation beschrieben!
         const url = `https://world.openfoodfacts.org/api/v2/product/${code}?fields=product_name,product_name_de,generic_name,brands,nutriments,image_front_thumb_url`;
         
         const data = await safeFetchJSON(url);
@@ -234,7 +244,6 @@ async function searchBarcodeAPI() {
         }
     } catch(e) { 
         c.innerHTML = `<div style="color:red; font-size:0.85rem; padding: 10px; background:#ffebeb; border-radius:8px;">API Error: ${e.message}</div>`; 
-        console.error("Fetch Error:", e); 
     }
 }
 
