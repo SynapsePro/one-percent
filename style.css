@@ -1,0 +1,215 @@
+/* --- CSS VARIABLES --- */
+:root {
+    --bg-white: #ffffff;
+    --text-light-gray: #e8e8e8;
+    --text-black: #1a1a1a;
+    --brand-blue-rgba: rgba(0, 113, 211, 0.5);
+    
+    --nav-bg: #000000;
+    --nav-inactive: #e5e5e5;
+    --nav-active: #ffffff;
+    
+    --goal-bg: #e2e2e2;
+    --progress-bg: #dce7fa;
+    --progress-text: #0056d6;
+
+    --nutri-cal: #d9d9d9;
+    --nutri-pro: #000000;
+    --nutri-carb: #006ce4;
+    --nutri-fat: #dce7fa;
+    
+    --safe-top: env(safe-area-inset-top, 20px);
+    --safe-bottom: env(safe-area-inset-bottom, 20px);
+}
+
+/* --- RESET & BASICS --- */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    -webkit-tap-highlight-color: transparent;
+}
+
+body {
+    background-color: #f0f0f0;
+    display: flex;
+    justify-content: center;
+    height: 100vh;
+    overflow: hidden; 
+}
+
+.app-container {
+    width: 100%;
+    max-width: 430px;
+    height: 100%;
+    background-color: var(--bg-white);
+    position: relative;
+    box-shadow: 0 0 20px rgba(0,0,0,0.1);
+    overflow: hidden;
+}
+
+.main-scroll-area {
+    height: 100%;
+    width: 100%;
+    overflow-y: auto; 
+    overflow-x: hidden;
+    padding-bottom: calc(50px + var(--safe-bottom)); 
+}
+
+/* --- HERO AREA --- */
+.hero {
+    position: relative;
+    height: 65vh;
+    min-height: 450px;
+    width: 100%;
+    background-color: var(--bg-white);
+    overflow: hidden;
+}
+.hero-name { position: absolute; top: calc(var(--safe-top) + 10px); left: 20px; font-size: 4rem; font-weight: 800; line-height: 0.9; color: var(--text-light-gray); z-index: 10; pointer-events: none; letter-spacing: -1px; }
+.hero-app-name { position: absolute; top: calc(var(--safe-top) + 15px); right: 20px; font-size: 2.2rem; font-weight: 900; color: var(--text-black); z-index: 10; pointer-events: none; }
+.avatar { position: absolute; bottom: 0; left: 50%; transform: translateX(-50%); width: 100%; height: 100%; object-fit: contain; object-position: bottom center; z-index: 5; cursor: pointer; }
+.gradient-overlay { position: absolute; bottom: 0; left: 0; width: 100%; height: 50%; background: linear-gradient(to top, var(--brand-blue-rgba), transparent); z-index: 8; pointer-events: none; }
+
+/* --- NAVIGATION --- */
+.nav-wrapper {
+    position: absolute;
+    bottom: 25px; 
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: var(--nav-bg);
+    padding: 8px;
+    border-radius: 50px;
+    display: flex;
+    gap: 10px;
+    z-index: 20;
+    box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+}
+.nav-btn { width: 55px; height: 55px; border-radius: 50%; border: none; background-color: var(--nav-inactive); cursor: pointer; display: flex; justify-content: center; align-items: center; transition: all 0.3s ease; }
+.nav-btn img { width: 24px; height: 24px; transition: opacity 0.3s ease, transform 0.2s ease; }
+.nav-btn.active { background-color: var(--nav-active); }
+.nav-btn.active img { transform: scale(1.1); }
+
+/* --- CONTENT AREA --- */
+.content-area { background-color: var(--bg-white); position: relative; z-index: 30; padding: 20px; }
+.view-section { display: none; animation: fadeIn 0.4s ease; }
+.view-section.active { display: flex; flex-direction: column; }
+.view-section h2 { font-size: 1.8rem; margin-bottom: 15px; color: var(--text-black); }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+/* --- GOALS VIEW --- */
+.goals-progress-bar { background-color: var(--progress-bg); border-radius: 30px; padding: 12px 20px; display: flex; justify-content: flex-end; align-items: center; margin-bottom: 25px; font-weight: 500; font-size: 1.1rem; }
+.goals-progress-bar span { color: var(--progress-text); font-weight: 700; margin-left: 5px; }
+.goals-list { display: flex; flex-direction: column; gap: 15px; }
+.goal-item { background-color: var(--goal-bg); border-radius: 40px; padding: 10px; display: flex; align-items: center; gap: 15px; cursor: pointer; transition: transform 0.1s ease; }
+.goal-item:active { transform: scale(0.98); }
+.goal-circle { width: 55px; height: 55px; background-color: #ffffff; border-radius: 50%; flex-shrink: 0; display: flex; justify-content: center; align-items: center; font-size: 0.8rem; font-weight: bold; color: var(--progress-text); }
+.goal-info { flex-grow: 1; }
+.goal-title { font-size: 1.2rem; font-weight: 600; margin-bottom: 4px; }
+.goal-stats { display: flex; align-items: center; font-size: 0.9rem; color: #333; }
+.goal-stats .divider { margin: 0 15px; color: #888; font-weight: 300; }
+.action-btn { background-color: #000000; color: #ffffff; border: none; border-radius: 30px; padding: 16px 30px; font-size: 1rem; font-weight: 600; width: fit-content; margin: 40px auto 10px auto; box-shadow: 0 5px 15px rgba(0,0,0,0.2); cursor: pointer; }
+
+/* --- NUTRITION VIEW --- */
+.week-tracker { display: flex; justify-content: space-between; margin-bottom: 25px; padding: 0 10px; }
+.day-circle { width: 35px; height: 35px; border-radius: 50%; background-color: #e5e5e5; display: flex; justify-content: center; align-items: center; font-size: 0.85rem; font-weight: 600; color: #333; }
+.day-circle.tracked { background-color: #96f2a9; }
+
+.macro-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px; }
+.macro-card { border-radius: 20px; padding: 15px; height: 140px; display: flex; flex-direction: column; justify-content: space-between; position: relative; }
+.macro-card .title { font-size: 0.9rem; font-weight: 500; }
+.macro-card .value { font-size: 1.3rem; font-weight: 700; }
+.macro-circle { position: absolute; top: 15px; right: 15px; width: 45px; height: 45px; background-color: #ffffff; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 0.75rem; font-weight: bold; }
+
+.card-cal { background-color: var(--nutri-cal); color: #000; } .card-cal .macro-circle { color: #000; }
+.card-pro { background-color: var(--nutri-pro); color: #fff; } .card-pro .macro-circle { color: #000; }
+.card-carb { background-color: var(--nutri-carb); color: #fff; } .card-carb .macro-circle { color: var(--nutri-carb); }
+.card-fat { background-color: var(--nutri-fat); color: #000; } .card-fat .macro-circle { color: #555; }
+
+.food-list-container { background-color: #f2f2f2; border-radius: 20px; padding: 15px; min-height: 150px; margin-bottom: 20px; display: flex; flex-direction: column; gap: 10px; max-height: 300px; overflow-y: auto;}
+.food-item { background: #fff; padding: 12px; border-radius: 12px; display: flex; justify-content: space-between; align-items: center; }
+.food-item-info { display: flex; flex-direction: column; }
+.food-item-name { font-weight: 600; font-size: 0.95rem; }
+.food-item-macros { font-size: 0.8rem; color: #666; margin-top: 4px; }
+.food-item-cal { font-size: 1rem; font-weight: 700; }
+
+.full-width-btn { width: 100%; border-radius: 30px; padding: 18px; font-size: 1.1rem; font-weight: 600; border: none; cursor: pointer; margin-bottom: 12px; transition: opacity 0.2s; }
+.full-width-btn:active { opacity: 0.8; }
+.btn-black { background-color: #000; color: #fff; }
+.btn-gray { background-color: #e5e5e5; color: #000; }
+
+/* --- MODALS --- */
+.modal-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); backdrop-filter: blur(3px); z-index: 100; display: none; justify-content: center; align-items: center; opacity: 0; transition: opacity 0.3s ease; }
+.modal-overlay.active { display: flex; opacity: 1; }
+.modal-content { background: white; padding: 25px; border-radius: 20px; width: 90%; max-width: 350px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); max-height: 85vh; overflow-y: auto; display: flex; flex-direction: column; }
+.modal-content h3 { margin-bottom: 15px; text-align: center; }
+
+.input-group { margin-bottom: 15px; }
+.input-group label { display: block; font-size: 0.85rem; color: #555; margin-bottom: 5px; font-weight: 500; }
+.input-group input { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 10px; font-size: 1rem; background: #fafafa;}
+.input-row { display: flex; gap: 10px; }
+.input-row .input-group { flex: 1; }
+
+.modal-actions { display: flex; gap: 10px; margin-top: 20px; flex-wrap: wrap; }
+.modal-btn { flex: 1; padding: 14px; border: none; border-radius: 12px; font-weight: bold; cursor: pointer; font-size: 0.95rem;}
+.btn-cancel { background: #eee; color: #333; }
+.btn-save { background: #000; color: #fff; }
+.btn-delete { background: #ff3b30; color: #fff; display: none; }
+
+/* Tabs inside Track Modal */
+.tab-header { display: flex; gap: 5px; margin-bottom: 15px; background: #eee; padding: 4px; border-radius: 12px;}
+.tab-btn { flex: 1; padding: 10px; border: none; background: transparent; border-radius: 8px; font-weight: 600; color: #555; cursor: pointer; }
+.tab-btn.active { background: #fff; color: #000; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+.tab-content { display: none; flex-direction: column; }
+.tab-content.active { display: flex; }
+
+.api-results { margin-top: 15px; display: flex; flex-direction: column; gap: 8px; max-height: 300px; overflow-y: auto; }
+
+/* --- MYFITNESSPAL STYLE API RESULTS --- */
+.api-result-item { 
+    padding: 10px; 
+    background: #fff; 
+    border: 1px solid #eee; 
+    border-radius: 12px; 
+    cursor: pointer; 
+    transition: background 0.2s, transform 0.1s;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.02);
+}
+.api-result-item:active { background: #f5f5f5; transform: scale(0.98); }
+
+.api-result-img {
+    width: 50px;
+    height: 50px;
+    border-radius: 8px;
+    object-fit: cover;
+    background-color: #f0f0f0;
+    flex-shrink: 0;
+    border: 1px solid #eee;
+}
+
+.api-result-info {
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1;
+    justify-content: center;
+}
+
+.api-result-title {
+    font-weight: 600;
+    font-size: 0.95rem;
+    color: #1a1a1a;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    line-height: 1.2;
+}
+
+.api-result-macros {
+    font-size: 0.8rem;
+    color: #666;
+    margin-top: 4px;
+}
