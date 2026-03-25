@@ -16,7 +16,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    // Start-Funktionen aufrufen
     renderGoals();
     updateNutritionUI();
 });
@@ -100,7 +99,7 @@ function deleteGoal() {
     }
 }
 
-// --- 3. NUTRITION & API LOGIC ---
+// --- 3. NUTRITION LOGIC ---
 let dailyTargets = { cal: 2500, pro: 160, carb: 300, fat: 80 };
 let trackedFoods = []; 
 let currentSearchResults = []; 
@@ -169,7 +168,25 @@ function switchTrackTab(tabId, btnElement) {
     document.getElementById('tab-' + tabId).classList.add('active');
 }
 
-// --- CORS & PREFLIGHT FIX: Keine Headers, keine extra Parameter mitsenden ---
+// --- 4. API LOGIC MIT PROXY-FALLBACK ---
+
+// Diese Helferfunktion umgeht die Cloudflare Blockade automatisch!
+async function safeFetchJSON(url) {
+    try {
+        // Versuch 1: Direkt anfragen
+        const response = await fetch(url);
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        return await response.json();
+    } catch (error) {
+        console.warn("Direct fetch blocked by CORS/Cloudflare. Using secure proxy fallback...");
+        // Versuch 2: Anfrage über allorigins.win leiten (Server-zu-Server)
+        const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
+        const proxyResponse = await fetch(proxyUrl);
+        if (!proxyResponse.ok) throw new Error(`Proxy failed with HTTP ${proxyResponse.status}`);
+        return await proxyResponse.json();
+    }
+}
+
 async function searchFoodAPI() {
     const q = document.getElementById('api-search-input').value.trim();
     const c = document.getElementById('api-results-container');
@@ -180,12 +197,10 @@ async function searchFoodAPI() {
     try {
         const url = `https://world.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(q)}&search_simple=1&action=process&json=1&page_size=25&fields=product_name,product_name_de,generic_name,brands,nutriments,image_front_thumb_url`;
         
-        const res = await fetch(url);
-        if (!res.ok) throw new Error(`Server returned ${res.status}`);
+        // Nutzt jetzt unsere kugelsichere Fallback-Funktion!
+        const data = await safeFetchJSON(url);
         
-        const data = await res.json();
-        
-        if (data.products && data.products.length > 0) {
+        if (data && data.products && data.products.length > 0) {
             renderAPIResults(data.products, c);
         } else {
             c.innerHTML = '<div style="text-align:center; padding: 20px; color:#888;"><i>No products found. Try another keyword.</i></div>';
@@ -206,12 +221,10 @@ async function searchBarcodeAPI() {
     try {
         const url = `https://world.openfoodfacts.org/api/v0/product/${code}.json?fields=product_name,product_name_de,generic_name,brands,nutriments,image_front_thumb_url`;
         
-        const res = await fetch(url);
-        if (!res.ok) throw new Error(`Server returned ${res.status}`);
+        // Nutzt jetzt unsere kugelsichere Fallback-Funktion!
+        const data = await safeFetchJSON(url);
         
-        const data = await res.json();
-        
-        if(data.status === 1 && data.product) {
+        if(data && data.status === 1 && data.product) {
             renderAPIResults([data.product], c);
         } else {
             c.innerHTML = '<div style="text-align:center; padding: 20px; color:#888;"><i>Barcode not found in database.</i></div>';
