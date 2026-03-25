@@ -177,7 +177,8 @@ async function searchFoodAPI() {
     c.innerHTML = '<div style="text-align:center; padding: 20px; color:#888;"><i>Searching database...</i></div>';
     
     try {
-        const url = `https://world.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(q)}&search_simple=1&action=process&json=1&page_size=25&fields=product_name,product_name_de,generic_name,brands,nutriments,image_front_thumb_url&_t=${Date.now()}`;
+        // HIER SIND DIE NEUEN PARAMETER: &app_name=MoritzFitnessWeb&app_version=1.0
+        const url = `https://world.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(q)}&search_simple=1&action=process&json=1&page_size=25&fields=product_name,product_name_de,generic_name,brands,nutriments,image_front_thumb_url&app_name=MoritzFitnessWeb&app_version=1.0&_t=${Date.now()}`;
         
         const res = await fetch(url, { headers: { 'Accept': 'application/json' }});
         if (!res.ok) throw new Error(`Server returned ${res.status}`);
@@ -202,7 +203,8 @@ async function searchBarcodeAPI() {
     c.innerHTML = '<div style="text-align:center; padding: 20px; color:#888;"><i>Looking up barcode...</i></div>';
     
     try {
-        const url = `https://world.openfoodfacts.org/api/v0/product/${code}.json?fields=product_name,product_name_de,generic_name,brands,nutriments,image_front_thumb_url&_t=${Date.now()}`;
+        // HIER AUCH DIE NEUEN PARAMETER FÜR DEN BARCODE SCANNER
+        const url = `https://world.openfoodfacts.org/api/v0/product/${code}.json?fields=product_name,product_name_de,generic_name,brands,nutriments,image_front_thumb_url&app_name=MoritzFitnessWeb&app_version=1.0&_t=${Date.now()}`;
         const res = await fetch(url, { headers: { 'Accept': 'application/json' }});
         
         if (!res.ok) throw new Error(`Server returned ${res.status}`);
