@@ -165,14 +165,12 @@ function switchTrackTab(tabId, btnElement) {
     document.getElementById('tab-' + tabId).classList.add('active');
 }
 
-// --- 4. API LOGIC MIT CLOUDFLARE WORKER ---
+// --- 4. API LOGIC — Cloudflare Pages Function (kein separater Worker nötig!) ---
+// Der Proxy läuft unter /proxy auf deiner eigenen Domain — kein CORS-Problem möglich.
 
-// ⚠️ HIER DEINE WORKER-URL EINTRAGEN nach dem Deployment:
-// Beispiel: 'https://food-proxy.DEINNAME.workers.dev'
-const WORKER_URL = 'https://one-percent-6xe.pages.dev/';
-
-async function safeFetchJSON(url) {
-    const proxyUrl = `${WORKER_URL}?url=${encodeURIComponent(url)}`;
+async function safeFetchJSON(offUrl) {
+    // Ruft deine eigene Pages Function auf — läuft auf derselben Domain
+    const proxyUrl = `/proxy?url=${encodeURIComponent(offUrl)}`;
 
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 10000);
@@ -181,24 +179,17 @@ async function safeFetchJSON(url) {
         const res = await fetch(proxyUrl, { signal: controller.signal });
         clearTimeout(timeout);
 
-        if (!res.ok) {
-            throw new Error(`Server Fehler: ${res.status}`);
-        }
+        if (!res.ok) throw new Error(`Server Fehler: ${res.status}`);
 
         const text = await res.text();
-
-        if (!text || text.trim().startsWith('<')) {
-            throw new Error('Ungültige Antwort erhalten');
-        }
+        if (!text || text.trim().startsWith('<')) throw new Error('Ungültige Antwort');
 
         return JSON.parse(text);
 
     } catch (e) {
         clearTimeout(timeout);
-        if (e.name === 'AbortError') {
-            throw new Error('Zeitüberschreitung — bitte erneut versuchen.');
-        }
-        throw new Error(e.message);
+        if (e.name === 'AbortError') throw new Error('Zeitüberschreitung — bitte erneut versuchen.');
+        throw e;
     }
 }
 
@@ -213,7 +204,6 @@ async function searchFoodAPI() {
 
     try {
         const url = `https://world.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(q)}&search_simple=1&action=process&json=1&page_size=10&fields=product_name,product_name_de,generic_name,brands,nutriments,image_front_thumb_url`;
-
         const data = await safeFetchJSON(url);
 
         if (data && data.products && data.products.length > 0) {
@@ -235,7 +225,6 @@ async function searchBarcodeAPI() {
 
     try {
         const url = `https://world.openfoodfacts.org/api/v2/product/${code}?fields=product_name,product_name_de,generic_name,brands,nutriments,image_front_thumb_url`;
-
         const data = await safeFetchJSON(url);
 
         if (data && data.product) {
@@ -298,7 +287,6 @@ function submitManualFood() {
     const fat  = parseFloat(document.getElementById('man-fat').value)  || 0;
 
     foodPendingAmount = { name, cal, pro, carb, fat };
-
     document.getElementById('amount-food-name').innerText = name;
     document.getElementById('food-amount-input').value = 100;
     closeModal('track-modal');
