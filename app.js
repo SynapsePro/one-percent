@@ -165,12 +165,11 @@ function switchTrackTab(tabId, btnElement) {
     document.getElementById('tab-' + tabId).classList.add('active');
 }
 
-// --- 4. API LOGIC — Cloudflare Pages Function (kein separater Worker nötig!) ---
-// Der Proxy läuft unter /proxy auf deiner eigenen Domain — kein CORS-Problem möglich.
+// --- 4. API LOGIC MIT CLOUDFLARE WORKER ---
+const WORKER_URL = 'https://cool-silence-3652.help-synapse-pro.workers.dev';
 
 async function safeFetchJSON(offUrl) {
-    // Ruft deine eigene Pages Function auf — läuft auf derselben Domain
-    const proxyUrl = `/proxy?url=${encodeURIComponent(offUrl)}`;
+    const proxyUrl = `${WORKER_URL}?url=${encodeURIComponent(offUrl)}`;
 
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 10000);
