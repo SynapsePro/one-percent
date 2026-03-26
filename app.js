@@ -165,62 +165,41 @@ function switchTrackTab(tabId, btnElement) {
     document.getElementById('tab-' + tabId).classList.add('active');
 }
 
-// --- 4. ROBUST API LOGIC ---
+// --- 4. API LOGIC MIT CLOUDFLARE WORKER ---
 
-// Mehrere Proxies als Fallback-Kette
-const PROXY_LIST = [
-    (u) => u,                                                                          // 1. Direktversuch
-    (u) => `https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`,              // 2. allorigins
-    (u) => `https://corsproxy.io/?${encodeURIComponent(u)}`,                          // 3. corsproxy.io
-    (u) => `https://proxy.cors.sh/${u}`,                                               // 4. cors.sh
-    (u) => `https://thingproxy.freeboard.io/fetch/${encodeURIComponent(u)}`           // 5. thingproxy
-];
+// ⚠️ HIER DEINE WORKER-URL EINTRAGEN nach dem Deployment:
+// Beispiel: 'https://food-proxy.DEINNAME.workers.dev'
+const WORKER_URL = 'https://one-percent-6xe.pages.dev/';
 
 async function safeFetchJSON(url) {
-    let lastError = null;
+    const proxyUrl = `${WORKER_URL}?url=${encodeURIComponent(url)}`;
 
-    for (let i = 0; i < PROXY_LIST.length; i++) {
-        const fetchUrl = PROXY_LIST[i](url);
-        const label = i === 0 ? 'Direktverbindung' : `Proxy ${i}`;
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 10000);
 
-        try {
-            const controller = new AbortController();
-            const timeout = setTimeout(() => controller.abort(), 8000); // 8s Timeout
+    try {
+        const res = await fetch(proxyUrl, { signal: controller.signal });
+        clearTimeout(timeout);
 
-            const res = await fetch(fetchUrl, { signal: controller.signal });
-            clearTimeout(timeout);
-
-            // HTTP-Fehlercodes abfangen (403, 429, 500 etc.)
-            if (!res.ok) {
-                console.warn(`${label} → HTTP ${res.status}, weiter...`);
-                continue;
-            }
-
-            const text = await res.text();
-
-            // HTML-Antwort = geblockt durch Cloudflare oder Proxy-Fehler
-            if (!text || text.trim().startsWith('<')) {
-                console.warn(`${label} → HTML empfangen (geblockt), weiter...`);
-                continue;
-            }
-
-            // Erfolgreich → JSON parsen und zurückgeben
-            const json = JSON.parse(text);
-            console.log(`✓ ${label} erfolgreich`);
-            return json;
-
-        } catch (e) {
-            if (e.name === 'AbortError') {
-                console.warn(`${label} → Timeout (>8s), weiter...`);
-            } else {
-                console.warn(`${label} → Fehler: ${e.message}, weiter...`);
-            }
-            lastError = e;
+        if (!res.ok) {
+            throw new Error(`Server Fehler: ${res.status}`);
         }
-    }
 
-    // Alle Proxies erschöpft
-    throw new Error("Keine Verbindung möglich. Bitte in 30 Sekunden erneut versuchen.");
+        const text = await res.text();
+
+        if (!text || text.trim().startsWith('<')) {
+            throw new Error('Ungültige Antwort erhalten');
+        }
+
+        return JSON.parse(text);
+
+    } catch (e) {
+        clearTimeout(timeout);
+        if (e.name === 'AbortError') {
+            throw new Error('Zeitüberschreitung — bitte erneut versuchen.');
+        }
+        throw new Error(e.message);
+    }
 }
 
 // --- 5. SEARCH & BARCODE ---
@@ -233,7 +212,6 @@ async function searchFoodAPI() {
     c.innerHTML = '<div style="text-align:center; padding: 20px; color:#888;"><i>Searching database...</i></div>';
 
     try {
-        // page_size=10 statt 25 → schneller & weniger Rate-Limit-Risiko
         const url = `https://world.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(q)}&search_simple=1&action=process&json=1&page_size=10&fields=product_name,product_name_de,generic_name,brands,nutriments,image_front_thumb_url`;
 
         const data = await safeFetchJSON(url);
@@ -340,12 +318,12 @@ function confirmAddFood() {
     const multiplier = amount / 100;
 
     trackedFoods.push({
-        name:  foodPendingAmount.name,
+        name:   foodPendingAmount.name,
         amount: amount,
-        cal:   foodPendingAmount.cal  * multiplier,
-        pro:   foodPendingAmount.pro  * multiplier,
-        carb:  foodPendingAmount.carb * multiplier,
-        fat:   foodPendingAmount.fat  * multiplier
+        cal:    foodPendingAmount.cal  * multiplier,
+        pro:    foodPendingAmount.pro  * multiplier,
+        carb:   foodPendingAmount.carb * multiplier,
+        fat:    foodPendingAmount.fat  * multiplier
     });
 
     closeModal('amount-modal');
