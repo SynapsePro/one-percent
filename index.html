@@ -96,7 +96,6 @@
                 <section id="view-body" class="view-section">
                     <h2>Body Analysis</h2>
 
-                    <!-- Body Stat Groups (Unverändert) -->
                     <div class="body-stat-group">
                         <h3>General Values</h3>
                         <div class="body-stat-grid">
@@ -186,7 +185,11 @@
                 
                 <div class="input-group">
                     <label>Exercise Picture (Optional)</label>
-                    <input type="file" id="goal-image-input" accept="image/*" class="file-input-styled">
+                    <!-- NEU: Zuverlässiger Datei-Upload Button via Label -->
+                    <label class="file-upload-wrapper">
+                        <input type="file" id="goal-image-input" accept="image/*" onchange="updateFileName(this, 'goal-image-text')">
+                        <span id="goal-image-text">Bild auswählen...</span>
+                    </label>
                 </div>
 
                 <div class="modal-actions">
@@ -234,7 +237,10 @@
                 
                 <div class="input-group">
                     <label>Recipe Picture (Optional)</label>
-                    <input type="file" id="recipe-image-input" accept="image/*" class="file-input-styled">
+                    <label class="file-upload-wrapper">
+                        <input type="file" id="recipe-image-input" accept="image/*" onchange="updateFileName(this, 'recipe-image-text')">
+                        <span id="recipe-image-text">Bild auswählen...</span>
+                    </label>
                 </div>
                 
                 <div class="modal-actions">
@@ -289,7 +295,10 @@
                 
                 <div class="input-group">
                     <label>Exercise Picture (Optional)</label>
-                    <input type="file" id="ex-image-input" accept="image/*" class="file-input-styled">
+                    <label class="file-upload-wrapper">
+                        <input type="file" id="ex-image-input" accept="image/*" onchange="updateFileName(this, 'ex-image-text')">
+                        <span id="ex-image-text">Bild auswählen...</span>
+                    </label>
                 </div>
                 
                 <div class="modal-actions">
@@ -302,7 +311,6 @@
         <!-- Body Stats Edit Modal -->
         <div class="modal-overlay" id="body-stats-modal">
             <div class="modal-content">
-                <!-- (Unverändert, wie vorher) -->
                 <h3>Edit Body Analysis</h3>
                 <details style="margin-bottom:15px; border:1px solid #ddd; border-radius:10px; padding:10px; background:#fafafa;">
                     <summary style="font-weight:bold; cursor:pointer; color:#0071d3;">General Values</summary>
