@@ -99,15 +99,18 @@ body {
 .goals-list { display: flex; flex-direction: column; gap: 15px; }
 .goal-item { background-color: var(--goal-bg); border-radius: 20px; padding: 10px; display: flex; align-items: center; gap: 15px; cursor: pointer; transition: transform 0.1s ease; }
 .goal-item:active { transform: scale(0.98); }
-.goal-circle { width: 55px; height: 55px; background-color: #ffffff; border-radius: 50%; flex-shrink: 0; display: flex; justify-content: center; align-items: center; font-size: 0.8rem; font-weight: bold; color: var(--progress-text); }
+
 .goal-info { flex-grow: 1; overflow: hidden; }
 .goal-title { font-size: 1.1rem; font-weight: 600; margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .goal-stats { display: flex; align-items: center; font-size: 0.85rem; color: #444; }
 .goal-stats .divider { margin: 0 10px; color: #888; font-weight: 300; }
+.goal-pct-right { font-weight: 800; font-size: 1.1rem; color: var(--brand-blue); margin-right: 5px; }
+
 .action-btn { background-color: #000000; color: #ffffff; border: none; border-radius: 30px; padding: 16px 30px; font-size: 1rem; font-weight: 600; width: fit-content; margin: 20px auto 10px auto; box-shadow: 0 5px 15px rgba(0,0,0,0.2); cursor: pointer; }
 
 /* Image Thumbnails */
-.item-thumb { width: 55px; height: 55px; border-radius: 12px; object-fit: cover; flex-shrink: 0; background-color: #ccc; }
+.item-thumb { width: 55px; height: 55px; border-radius: 50%; object-fit: cover; flex-shrink: 0; border: 2px solid #fff; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+.placeholder-thumb { background-color: #ccc; border: 2px solid #fff; }
 
 /* --- NUTRITION VIEW --- */
 .week-tracker { display: flex; justify-content: space-between; margin-bottom: 25px; padding: 0 10px; transform: scale(0.8); transform-origin: center; }
@@ -155,10 +158,11 @@ body {
 
 .input-group { margin-bottom: 15px; }
 .input-group label { display: block; font-size: 0.85rem; color: #555; margin-bottom: 5px; font-weight: 600; }
-.input-group input, .input-group textarea { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 10px; font-size: 1rem; background: #fafafa; }
+.input-group input[type="text"], .input-group input[type="number"], .input-group textarea { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 10px; font-size: 1rem; background: #fafafa; }
 .input-row { display: flex; gap: 10px; }
 .input-row .input-group { flex: 1; }
-.file-input { background: transparent !important; border: none !important; padding: 0 !important; font-size: 0.9rem; }
+
+.file-input-styled { display: block; width: 100%; padding: 10px; background: #fff; border: 1px solid #ddd; border-radius: 10px; color: #333; cursor: pointer; font-size: 0.9rem; }
 
 .readonly-text { padding: 12px; background: #f2f2f2; border-radius: 10px; font-size: 0.9rem; color: #333; min-height: 40px; white-space: pre-wrap; }
 
