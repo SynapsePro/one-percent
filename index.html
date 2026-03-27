@@ -96,6 +96,7 @@
                 <section id="view-body" class="view-section">
                     <h2>Body Analysis</h2>
 
+                    <!-- Body Stat Groups (Unverändert) -->
                     <div class="body-stat-group">
                         <h3>General Values</h3>
                         <div class="body-stat-grid">
@@ -169,6 +170,7 @@
         </div> 
 
         <!-- ================= MODALS ================= -->
+        
         <!-- Goals Modal -->
         <div class="modal-overlay" id="goal-modal">
             <div class="modal-content">
@@ -176,15 +178,15 @@
                 <input type="hidden" id="edit-goal-id" value="">
                 <input type="hidden" id="edit-goal-imgUrl" value="">
                 
-                <div class="input-group"><label>Exercise / Goal Name</label><input type="text" id="goal-name-input"></div>
+                <div class="input-group"><label>Exercise Name</label><input type="text" id="goal-name-input"></div>
                 <div class="input-row">
                     <div class="input-group"><label>Target</label><input type="number" id="goal-target-input"></div>
                     <div class="input-group"><label>Current Best</label><input type="number" id="goal-best-input"></div>
                 </div>
                 
                 <div class="input-group">
-                    <label>Add Progress Picture (Optional)</label>
-                    <input type="file" id="goal-image-input" accept="image/*" class="file-input">
+                    <label>Exercise Picture (Optional)</label>
+                    <input type="file" id="goal-image-input" accept="image/*" class="file-input-styled">
                 </div>
 
                 <div class="modal-actions">
@@ -232,7 +234,7 @@
                 
                 <div class="input-group">
                     <label>Recipe Picture (Optional)</label>
-                    <input type="file" id="recipe-image-input" accept="image/*" class="file-input">
+                    <input type="file" id="recipe-image-input" accept="image/*" class="file-input-styled">
                 </div>
                 
                 <div class="modal-actions">
@@ -256,7 +258,7 @@
                     <div class="readonly-text" id="view-recipe-steps"></div>
                 </div>
                 <div class="modal-actions">
-                    <button class="modal-btn btn-delete" onclick="deleteRecipe()">Delete</button>
+                    <button class="modal-btn btn-delete" style="display:block;" onclick="deleteRecipe()">Delete</button>
                     <button class="modal-btn btn-cancel" onclick="closeModal('recipe-view-modal')">Close</button>
                 </div>
                 <input type="hidden" id="view-recipe-id">
@@ -285,9 +287,14 @@
                 <div class="input-group"><label>Duration (mins)</label><input type="number" id="ex-duration" placeholder="e.g. 15 (Optional)"></div>
                 <div class="input-group"><label>Notes</label><input type="text" id="ex-notes" placeholder="e.g. Focus on slow eccentric"></div>
                 
+                <div class="input-group">
+                    <label>Exercise Picture (Optional)</label>
+                    <input type="file" id="ex-image-input" accept="image/*" class="file-input-styled">
+                </div>
+                
                 <div class="modal-actions">
                     <button class="modal-btn btn-cancel" onclick="closeModal('training-add-modal')">Cancel</button>
-                    <button class="modal-btn btn-save" onclick="saveExercise()">Save</button>
+                    <button class="modal-btn btn-save" id="btn-save-ex" onclick="saveExercise()">Save</button>
                 </div>
             </div>
         </div>
@@ -295,8 +302,8 @@
         <!-- Body Stats Edit Modal -->
         <div class="modal-overlay" id="body-stats-modal">
             <div class="modal-content">
+                <!-- (Unverändert, wie vorher) -->
                 <h3>Edit Body Analysis</h3>
-                <!-- Stats Inputs... -->
                 <details style="margin-bottom:15px; border:1px solid #ddd; border-radius:10px; padding:10px; background:#fafafa;">
                     <summary style="font-weight:bold; cursor:pointer; color:#0071d3;">General Values</summary>
                     <div class="input-row" style="margin-top:10px;"><div class="input-group"><label>Height</label><input type="number" id="input-height"></div><div class="input-group"><label>Weight</label><input type="number" id="input-weight"></div></div>
@@ -304,28 +311,24 @@
                     <div class="input-row"><div class="input-group"><label>Muscle Mass %</label><input type="number" id="input-muscleMass"></div><div class="input-group"><label>Fat Mass %</label><input type="number" id="input-fatMass"></div></div>
                     <div class="input-row"><div class="input-group"><label>Visceral Fat</label><input type="number" id="input-visceralFat"></div><div class="input-group"><label>Water %</label><input type="number" id="input-water"></div></div>
                 </details>
-
                 <details style="margin-bottom:15px; border:1px solid #ddd; border-radius:10px; padding:10px; background:#fafafa;">
                     <summary style="font-weight:bold; cursor:pointer; color:#0071d3;">Health & Metabolic</summary>
                     <div class="input-row" style="margin-top:10px;"><div class="input-group"><label>Bio-Age</label><input type="number" id="input-bioAge"></div><div class="input-group"><label>Cell Fitness</label><input type="number" id="input-cellFitness"></div></div>
                     <div class="input-row"><div class="input-group"><label>O2 Uptake</label><input type="number" id="input-o2uptake"></div><div class="input-group"><label>CO2 Emission</label><input type="number" id="input-co2emission"></div></div>
                     <div class="input-row"><div class="input-group"><label>O2 Satur. %</label><input type="number" id="input-o2saturation"></div><div class="input-group"><label>Cal Req.</label><input type="number" id="input-calReq"></div></div>
                 </details>
-
                 <details style="margin-bottom:15px; border:1px solid #ddd; border-radius:10px; padding:10px; background:#fafafa;">
                     <summary style="font-weight:bold; cursor:pointer; color:#0071d3;">Detailed / Fat Distribution</summary>
                     <div class="input-row" style="margin-top:10px;"><div class="input-group"><label>Det. Water kg</label><input type="number" id="input-detWater"></div><div class="input-group"><label>Det. Muscle Pro</label><input type="number" id="input-detMusclePro"></div></div>
                     <div class="input-row"><div class="input-group"><label>Passive Tissue</label><input type="number" id="input-detPassive"></div><div class="input-group"><label>Essential Fat</label><input type="number" id="input-fatEssential"></div></div>
                     <div class="input-row"><div class="input-group"><label>Fat Reserves</label><input type="number" id="input-fatReserves"></div><div class="input-group"><label>Excess Fat</label><input type="number" id="input-fatExcess"></div></div>
                 </details>
-
                 <details style="margin-bottom:15px; border:1px solid #ddd; border-radius:10px; padding:10px; background:#fafafa;">
                     <summary style="font-weight:bold; cursor:pointer; color:#0071d3;">Muscle Distribution (kg)</summary>
                     <div class="input-row" style="margin-top:10px;"><div class="input-group"><label>Total</label><input type="number" id="input-musTotal"></div><div class="input-group"><label>Torso</label><input type="number" id="input-musTorso"></div></div>
                     <div class="input-row"><div class="input-group"><label>Right Arm</label><input type="number" id="input-musRightArm"></div><div class="input-group"><label>Left Arm</label><input type="number" id="input-musLeftArm"></div></div>
                     <div class="input-row"><div class="input-group"><label>Right Leg</label><input type="number" id="input-musRightLeg"></div><div class="input-group"><label>Left Leg</label><input type="number" id="input-musLeftLeg"></div></div>
                 </details>
-
                 <details style="margin-bottom:15px; border:1px solid #ddd; border-radius:10px; padding:10px; background:#fafafa;">
                     <summary style="font-weight:bold; cursor:pointer; color:#0071d3;">Visceral & Water Details</summary>
                     <div class="input-row" style="margin-top:10px;"><div class="input-group"><label>Visceral kg</label><input type="number" id="input-visceralKg"></div><div class="input-group"><label>Water kg</label><input type="number" id="input-waterKg"></div></div>
@@ -342,7 +345,6 @@
 
     </div>
 
-    <!-- WICHTIG: type="module" hinzugefügt für Firebase -->
     <script type="module" src="app.js"></script>
 </body>
 </html>
