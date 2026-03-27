@@ -89,6 +89,27 @@ async function uploadImageFile(file, folderName) {
     return await getDownloadURL(storageReference);
 }
 
+// UI Feedback Funktion beim Bilder hochladen
+window.updateFileName = function(input, textId) {
+    const textSpan = document.getElementById(textId);
+    if (input.files && input.files.length > 0) {
+        textSpan.innerText = "✓ " + input.files[0].name;
+        textSpan.style.color = "var(--brand-blue)";
+    } else {
+        textSpan.innerText = "Bild auswählen...";
+        textSpan.style.color = "#333";
+    }
+};
+
+function resetFileInput(inputId, textId) {
+    document.getElementById(inputId).value = '';
+    const textSpan = document.getElementById(textId);
+    if(textSpan) {
+        textSpan.innerText = 'Bild auswählen...';
+        textSpan.style.color = '#333';
+    }
+}
+
 // ================= GOALS LOGIC =================
 function renderGoals() {
     const container = document.getElementById('goals-list-container');
@@ -105,7 +126,6 @@ function renderGoals() {
         let pct = Math.min(Math.round((g.best / g.target) * 100), 100) || 0;
         total += pct;
         
-        // Bild links
         let imgHtml = g.imgUrl 
             ? `<img src="${g.imgUrl}" class="item-thumb" alt="Goal">` 
             : `<div class="item-thumb placeholder-thumb"></div>`;
@@ -133,7 +153,7 @@ function openGoalModal(id = null) {
     document.getElementById('goal-name-input').value = '';
     document.getElementById('goal-target-input').value = '';
     document.getElementById('goal-best-input').value = '';
-    document.getElementById('goal-image-input').value = '';
+    resetFileInput('goal-image-input', 'goal-image-text');
     
     if (id) {
         const g = goalsData.find(x => x.id === id);
@@ -266,7 +286,7 @@ function renderRecipes() {
     
     recipes.forEach(r => {
         let imgHtml = r.imgUrl 
-            ? `<img src="${r.imgUrl}" class="item-thumb" alt="Recipe Image">` 
+            ? `<img src="${r.imgUrl}" class="item-thumb" alt="Recipe">` 
             : `<div class="item-thumb placeholder-thumb"></div>`;
             
         list.insertAdjacentHTML('beforeend', `
@@ -285,7 +305,7 @@ function openAddRecipeModal() {
     document.getElementById('recipe-name').value = '';
     document.getElementById('recipe-ingredients').value = '';
     document.getElementById('recipe-steps').value = '';
-    document.getElementById('recipe-image-input').value = '';
+    resetFileInput('recipe-image-input', 'recipe-image-text');
     document.getElementById('recipe-add-modal').classList.add('active');
 }
 
@@ -388,7 +408,7 @@ function openAddExerciseModal() {
     document.getElementById('ex-weight').value = '';
     document.getElementById('ex-duration').value = '';
     document.getElementById('ex-notes').value = '';
-    document.getElementById('ex-image-input').value = '';
+    resetFileInput('ex-image-input', 'ex-image-text');
     document.getElementById('training-add-modal').classList.add('active');
 }
 
