@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="theme-color" content="#ffffff">
     <title>1% - Moritz Fitness</title>
     <link rel="icon" type="image/png" href="media/favicon.png">
     <link rel="stylesheet" href="style.css">
@@ -39,13 +40,13 @@
                 <!-- 2. NUTRITION & RECIPES VIEW -->
                 <section id="view-nutrition" class="view-section">
                     <div class="week-tracker">
-                        <div class="day-circle">M</div>
-                        <div class="day-circle tracked">T</div> 
-                        <div class="day-circle">W</div>
-                        <div class="day-circle tracked">T</div> 
-                        <div class="day-circle">F</div>
-                        <div class="day-circle">S</div>
-                        <div class="day-circle">S</div>
+                        <div class="day-circle" id="day-circle-1">M</div>
+                        <div class="day-circle" id="day-circle-2">T</div> 
+                        <div class="day-circle" id="day-circle-3">W</div>
+                        <div class="day-circle" id="day-circle-4">T</div> 
+                        <div class="day-circle" id="day-circle-5">F</div>
+                        <div class="day-circle" id="day-circle-6">S</div>
+                        <div class="day-circle" id="day-circle-7">S</div>
                     </div>
 
                     <div class="macro-grid single-macro">
@@ -74,22 +75,14 @@
                 <section id="view-training" class="view-section">
                     <h2>Training Plan</h2>
                     
-                    <div class="training-category">
-                        <h3>Strength</h3>
-                        <div id="train-list-strength" class="training-list"></div>
-                    </div>
-                    
-                    <div class="training-category">
-                        <h3>Cardio</h3>
-                        <div id="train-list-cardio" class="training-list"></div>
-                    </div>
-                    
-                    <div class="training-category">
-                        <h3>Functional</h3>
-                        <div id="train-list-functional" class="training-list"></div>
+                    <div id="training-categories-container">
+                        <!-- Dynamically populated categories go here -->
                     </div>
 
-                    <button class="action-btn" onclick="openAddExerciseModal()">Add Exercise</button>
+                    <div style="display: flex; gap: 10px;">
+                        <button class="action-btn" onclick="openAddExerciseModal()">Add Exercise</button>
+                        <button class="action-btn" style="background-color: var(--nav-inactive); color: #000;" onclick="openAddCategoryModal()">Add Category</button>
+                    </div>
                 </section>
 
                 <!-- 4. BODY VIEW -->
@@ -97,6 +90,7 @@
                     <h2>Body Analysis</h2>
 
                     <div class="body-stat-group">
+                        <img src="media/general.png" class="body-banner" alt="General" onerror="this.style.display='none'">
                         <h3>General Values</h3>
                         <div class="body-stat-grid">
                             <div class="stat-box"><span>Height</span><strong id="stat-height">0</strong> cm</div>
@@ -111,6 +105,7 @@
                     </div>
 
                     <div class="body-stat-group">
+                        <img src="media/metabolic.png" class="body-banner" alt="Metabolic" onerror="this.style.display='none'">
                         <h3>Health & Metabolic</h3>
                         <div class="body-stat-grid">
                             <div class="stat-box"><span>Bio-Age</span><strong id="stat-bioAge">0</strong> yrs</div>
@@ -123,6 +118,7 @@
                     </div>
 
                     <div class="body-stat-group">
+                        <img src="media/detailed.png" class="body-banner" alt="Detailed" onerror="this.style.display='none'">
                         <h3>Detailed Analysis</h3>
                         <div class="body-stat-grid">
                             <div class="stat-box"><span>Water</span><strong id="stat-detWater">0</strong> kg</div>
@@ -132,6 +128,7 @@
                     </div>
 
                     <div class="body-stat-group">
+                        <img src="media/fat.png" class="body-banner" alt="Fat Distribution" onerror="this.style.display='none'">
                         <h3>Fat Mass Distribution</h3>
                         <div class="body-stat-grid">
                             <div class="stat-box"><span>Essential</span><strong id="stat-fatEssential">0</strong> kg</div>
@@ -141,6 +138,7 @@
                     </div>
 
                     <div class="body-stat-group">
+                        <img src="media/muscle.png" class="body-banner" alt="Muscle Mass" onerror="this.style.display='none'">
                         <h3>Muscle Mass (kg)</h3>
                         <div class="body-stat-grid">
                             <div class="stat-box"><span>Total</span><strong id="stat-musTotal">0</strong> kg</div>
@@ -153,6 +151,7 @@
                     </div>
 
                     <div class="body-stat-group">
+                        <img src="media/visceral.png" class="body-banner" alt="Visceral" onerror="this.style.display='none'">
                         <h3>Visceral & Water details</h3>
                         <div class="body-stat-grid">
                             <div class="stat-box"><span>Visceral</span><strong id="stat-visceralKg">0</strong> kg</div>
@@ -185,7 +184,6 @@
                 
                 <div class="input-group">
                     <label>Exercise Picture (Optional)</label>
-                    <!-- NEU: Zuverlässiger Datei-Upload Button via Label -->
                     <label class="file-upload-wrapper">
                         <input type="file" id="goal-image-input" accept="image/*" onchange="updateFileName(this, 'goal-image-text')">
                         <span id="goal-image-text">Bild auswählen...</span>
@@ -271,6 +269,18 @@
             </div>
         </div>
 
+        <!-- Training Category Add Modal -->
+        <div class="modal-overlay" id="category-add-modal">
+            <div class="modal-content">
+                <h3>New Category</h3>
+                <div class="input-group"><label>Category Name</label><input type="text" id="new-cat-name" placeholder="e.g. Push, Pull, Legs"></div>
+                <div class="modal-actions">
+                    <button class="modal-btn btn-cancel" onclick="closeModal('category-add-modal')">Cancel</button>
+                    <button class="modal-btn btn-save" onclick="saveCategory()">Save</button>
+                </div>
+            </div>
+        </div>
+
         <!-- Training Add Modal -->
         <div class="modal-overlay" id="training-add-modal">
             <div class="modal-content">
@@ -278,9 +288,7 @@
                 <div class="input-group">
                     <label>Category</label>
                     <select id="ex-category" style="width:100%; padding:12px; border-radius:10px; border:1px solid #ddd; background:#fafafa;">
-                        <option value="Strength">Strength</option>
-                        <option value="Cardio">Cardio</option>
-                        <option value="Functional">Functional</option>
+                        <!-- Options populated via JS -->
                     </select>
                 </div>
                 <div class="input-group"><label>Exercise Name</label><input type="text" id="ex-name" placeholder="e.g. Bench Press"></div>
