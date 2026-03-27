@@ -26,12 +26,10 @@ let exercises = [];
 let dailyTargets = { pro: 160 };
 let bodyStats = {};
 
-// Heute-Datum (Format: YYYY-MM-DD), damit Protein jeden Tag resettet wird
 const todayDateString = new Date().toISOString().split('T')[0];
 
 // --- APP START ---
 document.addEventListener('DOMContentLoaded', async () => {
-    // Navigation Logik
     document.querySelectorAll('.nav-btn').forEach(button => {
         button.addEventListener('click', function() {
             document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
@@ -42,34 +40,28 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     });
 
-    // Avatar GIF
     document.getElementById('avatar-gif').addEventListener('click', function() {
         this.src = this.src.split('?')[0] + '?t=' + new Date().getTime();
     });
 
-    // Lade alle Daten aus der Datenbank
     await fetchAllData();
 });
 
 // --- DATEN AUS FIREBASE LADEN ---
 async function fetchAllData() {
     try {
-        // 1. Ziele laden
         const goalsSnap = await getDocs(collection(db, "goals"));
         goalsData = goalsSnap.docs.map(d => ({ id: d.id, ...d.data() }));
         renderGoals();
 
-        // 2. Rezepte laden
         const recipesSnap = await getDocs(collection(db, "recipes"));
         recipes = recipesSnap.docs.map(d => ({ id: d.id, ...d.data() }));
         renderRecipes();
 
-        // 3. Training laden
         const trainSnap = await getDocs(collection(db, "exercises"));
         exercises = trainSnap.docs.map(d => ({ id: d.id, ...d.data() }));
         renderTraining();
 
-        // 4. Körper & Einstellungen laden
         const settingsSnap = await getDoc(doc(db, "user", "settings"));
         if (settingsSnap.exists()) {
             const data = settingsSnap.data();
@@ -78,14 +70,13 @@ async function fetchAllData() {
         }
         renderBodyStats();
 
-        // 5. Protein von HEUTE laden
         const qProtein = query(collection(db, "trackedFoods"), where("date", "==", todayDateString));
         const proSnap = await getDocs(qProtein);
         trackedFoods = proSnap.docs.map(d => ({ id: d.id, ...d.data() }));
         updateNutritionUI();
 
     } catch (error) {
-        console.error("Fehler beim Laden der Daten aus Firebase:", error);
+        console.error("Fehler beim Laden:", error);
     }
 }
 
@@ -114,16 +105,19 @@ function renderGoals() {
         let pct = Math.min(Math.round((g.best / g.target) * 100), 100) || 0;
         total += pct;
         
-        let imgHtml = g.imgUrl ? `<img src="${g.imgUrl}" class="item-thumb" alt="Goal Image">` : '';
+        // Bild links
+        let imgHtml = g.imgUrl 
+            ? `<img src="${g.imgUrl}" class="item-thumb" alt="Goal">` 
+            : `<div class="item-thumb placeholder-thumb"></div>`;
 
         container.insertAdjacentHTML('beforeend', `
             <div class="goal-item" onclick="openGoalModal('${g.id}')">
-                <div class="goal-circle">${pct}%</div>
                 ${imgHtml}
                 <div class="goal-info">
                     <div class="goal-title">${g.name}</div>
                     <div class="goal-stats"><span>Goal: ${g.target}</span><span class="divider">|</span><span>Best: ${g.best}</span></div>
                 </div>
+                <div class="goal-pct-right">${pct}%</div>
             </div>
         `);
     });
@@ -271,11 +265,14 @@ function renderRecipes() {
     list.innerHTML = recipes.length ? '' : '<div style="color:#888;text-align:center;margin-top:10px;font-size:0.9rem;">No recipes added yet.</div>';
     
     recipes.forEach(r => {
-        let imgHtml = r.imgUrl ? `<img src="${r.imgUrl}" class="item-thumb" alt="Recipe Image">` : '';
+        let imgHtml = r.imgUrl 
+            ? `<img src="${r.imgUrl}" class="item-thumb" alt="Recipe Image">` 
+            : `<div class="item-thumb placeholder-thumb"></div>`;
+            
         list.insertAdjacentHTML('beforeend', `
             <div class="goal-item" onclick="openViewRecipeModal('${r.id}')">
                 ${imgHtml}
-                <div class="goal-info" style="margin-left: ${imgHtml ? '0' : '10px'};">
+                <div class="goal-info">
                     <div class="goal-title">${r.name}</div>
                     <div class="goal-stats"><span>Tap to view ingredients & steps</span></div>
                 </div>
@@ -362,9 +359,14 @@ function renderTraining() {
             list.innerHTML = '<div style="color:#888; font-size:0.85rem; padding: 5px;">No exercises.</div>';
         } else {
             catEx.forEach(e => {
+                let imgHtml = e.imgUrl 
+                    ? `<img src="${e.imgUrl}" class="item-thumb" alt="Exercise">` 
+                    : `<div class="item-thumb placeholder-thumb"></div>`;
+
                 list.insertAdjacentHTML('beforeend', `
                     <div class="goal-item" style="margin-bottom: 10px;" onclick="deleteExercise('${e.id}')">
-                        <div class="goal-info" style="margin-left:10px;">
+                        ${imgHtml}
+                        <div class="goal-info">
                             <div class="goal-title">${e.name}</div>
                             <div class="goal-stats">
                                 ${e.reps ? `<span>Reps: ${e.reps}</span><span class="divider">|</span>` : ''}
@@ -386,6 +388,7 @@ function openAddExerciseModal() {
     document.getElementById('ex-weight').value = '';
     document.getElementById('ex-duration').value = '';
     document.getElementById('ex-notes').value = '';
+    document.getElementById('ex-image-input').value = '';
     document.getElementById('training-add-modal').classList.add('active');
 }
 
@@ -396,13 +399,24 @@ async function saveExercise() {
     const weight = document.getElementById('ex-weight').value;
     const duration = document.getElementById('ex-duration').value;
     const notes = document.getElementById('ex-notes').value;
+    const file = document.getElementById('ex-image-input').files[0];
 
     if (!name.trim()) return alert('Enter exercise name.');
 
-    const dataObj = { name, category, reps, weight, duration, notes };
+    const btn = document.getElementById('btn-save-ex');
+    btn.innerText = "Saving...";
+
+    let imgUrl = null;
+    if (file) {
+        imgUrl = await uploadImageFile(file, 'training');
+    }
+
+    const dataObj = { name, category, reps, weight, duration, notes, imgUrl };
     const docRef = await addDoc(collection(db, "exercises"), dataObj);
     
     exercises.push({ id: docRef.id, ...dataObj });
+    
+    btn.innerText = "Save";
     closeModal('training-add-modal');
     renderTraining();
 }
@@ -432,7 +446,6 @@ function openBodyStatsModal() {
 }
 
 async function saveBodyStats() {
-    // Collect data from inputs
     const keys = ['height','weight','bodyFat','bmi','muscleMass','fatMass','visceralFat','water','bioAge','cellFitness','o2uptake','co2emission','o2saturation','calReq','detWater','detMusclePro','detPassive','fatEssential','fatReserves','fatExcess','musTotal','musTorso','musRightArm','musLeftArm','musRightLeg','musLeftLeg','visceralKg','waterKg','waterBalIntra','waterBalExtra','waterBalPct'];
     
     let newStats = {};
@@ -448,7 +461,7 @@ async function saveBodyStats() {
     renderBodyStats();
 }
 
-// --- FUNKTIONEN FÜR HTML (GLOBAL MACHEN WEGEN TYPE="MODULE") ---
+// --- FUNKTIONEN FÜR HTML GLOBALE SICHTBARKEIT ---
 window.closeModal = (id) => document.getElementById(id).classList.remove('active');
 window.openGoalModal = openGoalModal;
 window.saveGoal = saveGoal;
