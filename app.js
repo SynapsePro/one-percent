@@ -23,6 +23,7 @@ let goalsData = [];
 let trackedFoods = [];
 let recipes = [];
 let exercises = [];
+let trainingCategories = ['Strength', 'Cardio', 'Functional'];
 let dailyTargets = { pro: 160 };
 let bodyStats = {};
 
@@ -60,20 +61,26 @@ async function fetchAllData() {
 
         const trainSnap = await getDocs(collection(db, "exercises"));
         exercises = trainSnap.docs.map(d => ({ id: d.id, ...d.data() }));
-        renderTraining();
 
         const settingsSnap = await getDoc(doc(db, "user", "settings"));
         if (settingsSnap.exists()) {
             const data = settingsSnap.data();
             if(data.proteinTarget) dailyTargets.pro = data.proteinTarget;
             if(data.bodyStats) bodyStats = data.bodyStats;
+            if(data.trainingCategories) trainingCategories = data.trainingCategories;
         }
+        
+        renderTraining();
         renderBodyStats();
 
+        // Fetch Today's Protein
         const qProtein = query(collection(db, "trackedFoods"), where("date", "==", todayDateString));
         const proSnap = await getDocs(qProtein);
         trackedFoods = proSnap.docs.map(d => ({ id: d.id, ...d.data() }));
         updateNutritionUI();
+
+        // Fetch Week data for dynamic UI tracker
+        await updateWeekTrackerUI();
 
     } catch (error) {
         console.error("Fehler beim Laden:", error);
@@ -239,6 +246,39 @@ function updateNutritionUI() {
     });
 }
 
+async function updateWeekTrackerUI() {
+    let curr = new Date();
+    let day = curr.getDay() || 7; 
+    curr.setHours(0,0,0,0);
+    
+    let monday = new Date(curr);
+    monday.setDate(curr.getDate() - day + 1);
+    let monStr = monday.toISOString().split('T')[0];
+    
+    const qWeek = query(collection(db, "trackedFoods"), where("date", ">=", monStr));
+    const weekSnap = await getDocs(qWeek);
+    
+    let trackedDates = new Set();
+    weekSnap.forEach(d => {
+        trackedDates.add(d.data().date);
+    });
+    
+    for(let i = 1; i <= 7; i++) {
+        let d = new Date(monday);
+        d.setDate(monday.getDate() + (i - 1));
+        let dStr = d.toISOString().split('T')[0];
+        
+        let circle = document.getElementById('day-circle-' + i);
+        if(circle) {
+            if(trackedDates.has(dStr)) {
+                circle.classList.add('tracked');
+            } else {
+                circle.classList.remove('tracked');
+            }
+        }
+    }
+}
+
 function openMacroConfigModal() {
     document.getElementById('cfg-pro').value = dailyTargets.pro;
     document.getElementById('macro-config-modal').classList.add('active');
@@ -277,6 +317,7 @@ async function submitManualFood() {
     
     closeModal('track-modal');
     updateNutritionUI();
+    await updateWeekTrackerUI();
 }
 
 // ================= RECIPES LOGIC =================
@@ -368,22 +409,26 @@ async function deleteRecipe() {
 
 // ================= TRAINING LOGIC =================
 function renderTraining() {
-    const categories = ['Strength', 'Cardio', 'Functional'];
+    const container = document.getElementById('training-categories-container');
+    container.innerHTML = '';
+    const select = document.getElementById('ex-category');
+    select.innerHTML = '';
     
-    categories.forEach(cat => {
-        const list = document.getElementById(`train-list-${cat.toLowerCase()}`);
-        list.innerHTML = '';
+    trainingCategories.forEach(cat => {
+        select.insertAdjacentHTML('beforeend', `<option value="${cat}">${cat}</option>`);
+        
         const catEx = exercises.filter(e => e.category === cat);
+        let listHtml = '';
         
         if (catEx.length === 0) {
-            list.innerHTML = '<div style="color:#888; font-size:0.85rem; padding: 5px;">No exercises.</div>';
+            listHtml = '<div style="color:#888; font-size:0.85rem; padding: 5px;">No exercises.</div>';
         } else {
             catEx.forEach(e => {
                 let imgHtml = e.imgUrl 
                     ? `<img src="${e.imgUrl}" class="item-thumb" alt="Exercise">` 
                     : `<div class="item-thumb placeholder-thumb"></div>`;
 
-                list.insertAdjacentHTML('beforeend', `
+                listHtml += `
                     <div class="goal-item" style="margin-bottom: 10px;" onclick="deleteExercise('${e.id}')">
                         ${imgHtml}
                         <div class="goal-info">
@@ -396,13 +441,41 @@ function renderTraining() {
                             ${e.notes ? `<div style="font-size:0.8rem; color:#666; margin-top:4px;">Note: ${e.notes}</div>` : ''}
                         </div>
                     </div>
-                `);
+                `;
             });
         }
+        
+        container.insertAdjacentHTML('beforeend', `
+            <details class="training-category" open>
+                <summary><h3>${cat}</h3></summary>
+                <div class="training-list">${listHtml}</div>
+            </details>
+        `);
     });
 }
 
+function openAddCategoryModal() {
+    document.getElementById('new-cat-name').value = '';
+    document.getElementById('category-add-modal').classList.add('active');
+}
+
+async function saveCategory() {
+    const catName = document.getElementById('new-cat-name').value.trim();
+    if (!catName) return alert('Enter category name.');
+    
+    if (trainingCategories.includes(catName)) {
+        return alert('Category already exists.');
+    }
+    
+    trainingCategories.push(catName);
+    await setDoc(doc(db, "user", "settings"), { trainingCategories }, { merge: true });
+    
+    closeModal('category-add-modal');
+    renderTraining();
+}
+
 function openAddExerciseModal() {
+    if(trainingCategories.length === 0) return alert('Please add a category first.');
     document.getElementById('ex-name').value = '';
     document.getElementById('ex-reps').value = '';
     document.getElementById('ex-weight').value = '';
@@ -494,6 +567,8 @@ window.openAddRecipeModal = openAddRecipeModal;
 window.saveRecipe = saveRecipe;
 window.openViewRecipeModal = openViewRecipeModal;
 window.deleteRecipe = deleteRecipe;
+window.openAddCategoryModal = openAddCategoryModal;
+window.saveCategory = saveCategory;
 window.openAddExerciseModal = openAddExerciseModal;
 window.saveExercise = saveExercise;
 window.deleteExercise = deleteExercise;
