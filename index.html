@@ -4,11 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>1% - Moritz Fitness</title>
-    
-    <!-- Neues Favicon -->
     <link rel="icon" type="image/png" href="media/favicon.png">
-    
-    <!-- CSS einbinden -->
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -23,10 +19,10 @@
                 <div class="gradient-overlay"></div>
                 
                 <nav class="nav-wrapper">
-                    <button class="nav-btn active" data-target="view-goals"><img src="media/ziel.svg" alt="Goals"></button>
-                    <button class="nav-btn" data-target="view-nutrition"><img src="media/nahrung.svg" alt="Nutrition"></button>
-                    <button class="nav-btn" data-target="view-training"><img src="media/plan.svg" alt="Training"></button>
-                    <button class="nav-btn" data-target="view-body"><img src="media/analyse.svg" alt="Body"></button>
+                    <button class="nav-btn active" data-target="view-goals"><img src="media/ziel.svg" alt="Goals" onerror="this.src='https://via.placeholder.com/24'"></button>
+                    <button class="nav-btn" data-target="view-nutrition"><img src="media/nahrung.svg" alt="Nutrition" onerror="this.src='https://via.placeholder.com/24'"></button>
+                    <button class="nav-btn" data-target="view-training"><img src="media/plan.svg" alt="Training" onerror="this.src='https://via.placeholder.com/24'"></button>
+                    <button class="nav-btn" data-target="view-body"><img src="media/analyse.svg" alt="Body" onerror="this.src='https://via.placeholder.com/24'"></button>
                 </nav>
             </div>
 
@@ -34,11 +30,13 @@
                 <!-- 1. GOALS VIEW -->
                 <section id="view-goals" class="view-section active">
                     <div class="goals-progress-bar">Completed: <span id="total-progress-text">0%</span></div>
-                    <div class="goals-list" id="goals-list-container"></div>
+                    <div class="goals-list" id="goals-list-container">
+                        <div style="text-align:center; color:#888;">Loading goals...</div>
+                    </div>
                     <button class="action-btn" onclick="openGoalModal()">New Goal</button>
                 </section>
 
-                <!-- 2. NUTRITION VIEW -->
+                <!-- 2. NUTRITION & RECIPES VIEW -->
                 <section id="view-nutrition" class="view-section">
                     <div class="week-tracker">
                         <div class="day-circle">M</div>
@@ -50,45 +48,122 @@
                         <div class="day-circle">S</div>
                     </div>
 
-                    <div class="macro-grid">
-                        <div class="macro-card card-cal">
-                            <div class="title">Calories</div>
-                            <div class="value" id="ui-cal-val">0 cal</div>
-                            <div class="macro-circle" id="ui-cal-pct">0%</div>
-                        </div>
+                    <div class="macro-grid single-macro">
                         <div class="macro-card card-pro">
-                            <div class="title">Protein</div>
+                            <div class="title">Protein (Today)</div>
                             <div class="value" id="ui-pro-val">0 g</div>
                             <div class="macro-circle" id="ui-pro-pct">0%</div>
                         </div>
-                        <div class="macro-card card-carb">
-                            <div class="title">Carbs</div>
-                            <div class="value" id="ui-carb-val">0 g</div>
-                            <div class="macro-circle" id="ui-carb-pct">0%</div>
-                        </div>
-                        <div class="macro-card card-fat">
-                            <div class="title">Fat</div>
-                            <div class="value" id="ui-fat-val">0 g</div>
-                            <div class="macro-circle" id="ui-fat-pct">0%</div>
-                        </div>
                     </div>
 
-                    <div class="food-list-container" id="food-list"></div>
+                    <div class="food-list-container" id="food-list">
+                        <div style="text-align:center; color:#888;">Loading...</div>
+                    </div>
 
-                    <button class="full-width-btn btn-black" onclick="openTrackModal()">Track Food</button>
+                    <button class="full-width-btn btn-black" onclick="openTrackModal()">Track Protein</button>
                     <button class="full-width-btn btn-gray" onclick="openMacroConfigModal()">Set Daily Goals</button>
+
+                    <h2 style="margin-top: 30px; font-size: 1.4rem;">Recipe Book</h2>
+                    <div id="recipe-list-container" style="margin-bottom: 15px;">
+                        <div style="text-align:center; color:#888;">Loading recipes...</div>
+                    </div>
+                    <button class="full-width-btn btn-black" onclick="openAddRecipeModal()">Add Recipe</button>
                 </section>
 
                 <!-- 3. TRAINING VIEW -->
                 <section id="view-training" class="view-section">
                     <h2>Training Plan</h2>
-                    <p>Placeholder for your workout split.</p>
+                    
+                    <div class="training-category">
+                        <h3>Strength</h3>
+                        <div id="train-list-strength" class="training-list"></div>
+                    </div>
+                    
+                    <div class="training-category">
+                        <h3>Cardio</h3>
+                        <div id="train-list-cardio" class="training-list"></div>
+                    </div>
+                    
+                    <div class="training-category">
+                        <h3>Functional</h3>
+                        <div id="train-list-functional" class="training-list"></div>
+                    </div>
+
+                    <button class="action-btn" onclick="openAddExerciseModal()">Add Exercise</button>
                 </section>
 
                 <!-- 4. BODY VIEW -->
                 <section id="view-body" class="view-section">
                     <h2>Body Analysis</h2>
-                    <p>Placeholder for weight and progress.</p>
+
+                    <div class="body-stat-group">
+                        <h3>General Values</h3>
+                        <div class="body-stat-grid">
+                            <div class="stat-box"><span>Height</span><strong id="stat-height">0</strong> cm</div>
+                            <div class="stat-box"><span>Weight</span><strong id="stat-weight">0</strong> kg</div>
+                            <div class="stat-box"><span>Body Fat</span><strong id="stat-bodyFat">0</strong> %</div>
+                            <div class="stat-box"><span>BMI</span><strong id="stat-bmi">0</strong></div>
+                            <div class="stat-box"><span>Muscle Mass</span><strong id="stat-muscleMass">0</strong> %</div>
+                            <div class="stat-box"><span>Fat Mass</span><strong id="stat-fatMass">0</strong> %</div>
+                            <div class="stat-box"><span>Visceral Fat</span><strong id="stat-visceralFat">0</strong></div>
+                            <div class="stat-box"><span>Water</span><strong id="stat-water">0</strong> %</div>
+                        </div>
+                    </div>
+
+                    <div class="body-stat-group">
+                        <h3>Health & Metabolic</h3>
+                        <div class="body-stat-grid">
+                            <div class="stat-box"><span>Bio-Age</span><strong id="stat-bioAge">0</strong> yrs</div>
+                            <div class="stat-box"><span>Cell Fitness</span><strong id="stat-cellFitness">0</strong></div>
+                            <div class="stat-box"><span>O2 Uptake</span><strong id="stat-o2uptake">0</strong></div>
+                            <div class="stat-box"><span>CO2 Emission</span><strong id="stat-co2emission">0</strong></div>
+                            <div class="stat-box"><span>O2 Saturation</span><strong id="stat-o2saturation">0</strong> %</div>
+                            <div class="stat-box"><span>Cal Req</span><strong id="stat-calReq">0</strong> kcal</div>
+                        </div>
+                    </div>
+
+                    <div class="body-stat-group">
+                        <h3>Detailed Analysis</h3>
+                        <div class="body-stat-grid">
+                            <div class="stat-box"><span>Water</span><strong id="stat-detWater">0</strong> kg</div>
+                            <div class="stat-box"><span>Muscle Pro</span><strong id="stat-detMusclePro">0</strong> kg</div>
+                            <div class="stat-box"><span>Passive Tissue</span><strong id="stat-detPassive">0</strong> kg</div>
+                        </div>
+                    </div>
+
+                    <div class="body-stat-group">
+                        <h3>Fat Mass Distribution</h3>
+                        <div class="body-stat-grid">
+                            <div class="stat-box"><span>Essential</span><strong id="stat-fatEssential">0</strong> kg</div>
+                            <div class="stat-box"><span>Reserves</span><strong id="stat-fatReserves">0</strong> kg</div>
+                            <div class="stat-box"><span>Excess</span><strong id="stat-fatExcess">0</strong> kg</div>
+                        </div>
+                    </div>
+
+                    <div class="body-stat-group">
+                        <h3>Muscle Mass (kg)</h3>
+                        <div class="body-stat-grid">
+                            <div class="stat-box"><span>Total</span><strong id="stat-musTotal">0</strong> kg</div>
+                            <div class="stat-box"><span>Torso</span><strong id="stat-musTorso">0</strong> kg</div>
+                            <div class="stat-box"><span>R. Arm</span><strong id="stat-musRightArm">0</strong> kg</div>
+                            <div class="stat-box"><span>L. Arm</span><strong id="stat-musLeftArm">0</strong> kg</div>
+                            <div class="stat-box"><span>R. Leg</span><strong id="stat-musRightLeg">0</strong> kg</div>
+                            <div class="stat-box"><span>L. Leg</span><strong id="stat-musLeftLeg">0</strong> kg</div>
+                        </div>
+                    </div>
+
+                    <div class="body-stat-group">
+                        <h3>Visceral & Water details</h3>
+                        <div class="body-stat-grid">
+                            <div class="stat-box"><span>Visceral</span><strong id="stat-visceralKg">0</strong> kg</div>
+                            <div class="stat-box"><span>Water</span><strong id="stat-waterKg">0</strong> kg</div>
+                            <div class="stat-box"><span>Intra Water</span><strong id="stat-waterBalIntra">0</strong> kg</div>
+                            <div class="stat-box"><span>Extra Water</span><strong id="stat-waterBalExtra">0</strong> kg</div>
+                            <div class="stat-box"><span>Water Bal.</span><strong id="stat-waterBalPct">0</strong> %</div>
+                        </div>
+                    </div>
+
+                    <button class="action-btn" onclick="openBodyStatsModal()">Edit Values</button>
                 </section>
             </div>
         </div> 
@@ -99,13 +174,23 @@
             <div class="modal-content">
                 <h3 id="modal-title">New Goal</h3>
                 <input type="hidden" id="edit-goal-id" value="">
+                <input type="hidden" id="edit-goal-imgUrl" value="">
+                
                 <div class="input-group"><label>Exercise / Goal Name</label><input type="text" id="goal-name-input"></div>
-                <div class="input-group"><label>Target (Amount)</label><input type="number" id="goal-target-input"></div>
-                <div class="input-group"><label>Current Best</label><input type="number" id="goal-best-input"></div>
+                <div class="input-row">
+                    <div class="input-group"><label>Target</label><input type="number" id="goal-target-input"></div>
+                    <div class="input-group"><label>Current Best</label><input type="number" id="goal-best-input"></div>
+                </div>
+                
+                <div class="input-group">
+                    <label>Add Progress Picture (Optional)</label>
+                    <input type="file" id="goal-image-input" accept="image/*" class="file-input">
+                </div>
+
                 <div class="modal-actions">
                     <button class="modal-btn btn-delete" id="btn-delete" onclick="deleteGoal()">Delete</button>
                     <button class="modal-btn btn-cancel" onclick="closeModal('goal-modal')">Cancel</button>
-                    <button class="modal-btn btn-save" onclick="saveGoal()">Save</button>
+                    <button class="modal-btn btn-save" id="btn-save-goal" onclick="saveGoal()">Save</button>
                 </div>
             </div>
         </div>
@@ -114,10 +199,7 @@
         <div class="modal-overlay" id="macro-config-modal">
             <div class="modal-content">
                 <h3>Set Daily Goals</h3>
-                <div class="input-group"><label>Calories (kcal)</label><input type="number" id="cfg-cal"></div>
-                <div class="input-group"><label>Protein (g)</label><input type="number" id="cfg-pro"></div>
-                <div class="input-group"><label>Carbs (g)</label><input type="number" id="cfg-carb"></div>
-                <div class="input-group"><label>Fat (g)</label><input type="number" id="cfg-fat"></div>
+                <div class="input-group"><label>Protein Goal (g)</label><input type="number" id="cfg-pro"></div>
                 <div class="modal-actions">
                     <button class="modal-btn btn-cancel" onclick="closeModal('macro-config-modal')">Cancel</button>
                     <button class="modal-btn btn-save" onclick="saveMacroGoals()">Save</button>
@@ -125,69 +207,142 @@
             </div>
         </div>
 
-        <!-- Track Food Modal -->
+        <!-- Track Protein Modal -->
         <div class="modal-overlay" id="track-modal">
-            <div class="modal-content" style="padding-bottom:15px;">
-                <h3>Add Food</h3>
-                <div class="tab-header">
-                    <button class="tab-btn active" id="btn-tab-search" onclick="switchTrackTab('search', this)">Search</button>
-                    <button class="tab-btn" id="btn-tab-barcode" onclick="switchTrackTab('barcode', this)">Barcode</button>
-                    <button class="tab-btn" id="btn-tab-manual" onclick="switchTrackTab('manual', this)">Manual</button>
-                </div>
-
-                <div class="tab-content active" id="tab-search">
-                    <div class="input-group">
-                        <input type="text" id="api-search-input" placeholder="e.g. Banana, Oats..." onkeypress="if(event.key==='Enter') searchFoodAPI()">
-                    </div>
-                    <button class="full-width-btn btn-black" style="padding:12px; font-size:1rem;" onclick="searchFoodAPI()">Search Database</button>
-                    <div class="api-results" id="api-results-container"></div>
-                </div>
-
-                <div class="tab-content" id="tab-barcode">
-                    <p style="font-size:0.85rem; color:#666; margin-bottom:10px; text-align:center;">Enter the EAN barcode number from the packaging.</p>
-                    <div class="input-group">
-                        <input type="number" id="api-barcode-input" placeholder="e.g. 4008400404127" onkeypress="if(event.key==='Enter') searchBarcodeAPI()">
-                    </div>
-                    <button class="full-width-btn btn-black" style="padding:12px; font-size:1rem;" onclick="searchBarcodeAPI()">Lookup Barcode</button>
-                    <div class="api-results" id="barcode-results-container"></div>
-                </div>
-
-                <div class="tab-content" id="tab-manual">
-                    <div class="input-group"><label>Food Name</label><input type="text" id="man-name" placeholder="e.g. Chicken Breast"></div>
-                    <div class="input-row">
-                        <div class="input-group"><label>Kcal / 100g</label><input type="number" id="man-cal" placeholder="0"></div>
-                        <div class="input-group"><label>Protein (g)</label><input type="number" id="man-pro" placeholder="0"></div>
-                    </div>
-                    <div class="input-row">
-                        <div class="input-group"><label>Carbs (g)</label><input type="number" id="man-carb" placeholder="0"></div>
-                        <div class="input-group"><label>Fat (g)</label><input type="number" id="man-fat" placeholder="0"></div>
-                    </div>
-                    <button class="full-width-btn btn-black" style="padding:12px; font-size:1rem; margin-top:10px;" onclick="submitManualFood()">Continue</button>
-                </div>
-
+            <div class="modal-content">
+                <h3>Track Protein</h3>
+                <div class="input-group"><label>Food Name</label><input type="text" id="man-name" placeholder="e.g. Protein Bar"></div>
+                <div class="input-group"><label>Protein content per 100g (in g)</label><input type="number" id="man-pro-100" placeholder="e.g. 30"></div>
+                <div class="input-group"><label>Amount Eaten (in g)</label><input type="number" id="man-amount" placeholder="e.g. 40"></div>
+                
                 <div class="modal-actions" style="margin-top:10px;">
-                    <button class="modal-btn btn-cancel" onclick="closeModal('track-modal')">Close</button>
+                    <button class="modal-btn btn-cancel" onclick="closeModal('track-modal')">Cancel</button>
+                    <button class="modal-btn btn-save" onclick="submitManualFood()">Add to Diary</button>
                 </div>
             </div>
         </div>
 
-        <!-- Amount Entry Modal -->
-        <div class="modal-overlay" id="amount-modal">
+        <!-- Recipe Add Modal -->
+        <div class="modal-overlay" id="recipe-add-modal">
             <div class="modal-content">
-                <h3 id="amount-food-name">Food Name</h3>
-                <p style="text-align:center; font-size:0.85rem; color:#666; margin-bottom:15px;">Enter the amount in grams/ml</p>
+                <h3>New Recipe</h3>
+                <div class="input-group"><label>Recipe Name</label><input type="text" id="recipe-name" placeholder="e.g. Protein Pancakes"></div>
+                <div class="input-group"><label>Ingredients & Shopping List</label><textarea id="recipe-ingredients" rows="3" placeholder="e.g. 2 eggs, 50g oats..."></textarea></div>
+                <div class="input-group"><label>Preparation Steps</label><textarea id="recipe-steps" rows="3" placeholder="e.g. Mix everything and fry..."></textarea></div>
+                
                 <div class="input-group">
-                    <input type="number" id="food-amount-input" value="100" style="text-align:center; font-size:1.5rem; padding:15px;">
+                    <label>Recipe Picture (Optional)</label>
+                    <input type="file" id="recipe-image-input" accept="image/*" class="file-input">
+                </div>
+                
+                <div class="modal-actions">
+                    <button class="modal-btn btn-cancel" onclick="closeModal('recipe-add-modal')">Cancel</button>
+                    <button class="modal-btn btn-save" id="btn-save-recipe" onclick="saveRecipe()">Save Recipe</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recipe View Modal -->
+        <div class="modal-overlay" id="recipe-view-modal">
+            <div class="modal-content">
+                <h3 id="view-recipe-title">Recipe</h3>
+                <img id="view-recipe-image" src="" alt="Recipe" style="display:none; width:100%; height:150px; object-fit:cover; border-radius:10px; margin-bottom:15px;">
+                <div class="input-group">
+                    <label>Ingredients & Shopping List</label>
+                    <div class="readonly-text" id="view-recipe-ingredients"></div>
+                </div>
+                <div class="input-group">
+                    <label>Preparation</label>
+                    <div class="readonly-text" id="view-recipe-steps"></div>
                 </div>
                 <div class="modal-actions">
-                    <button class="modal-btn btn-cancel" onclick="closeModal('amount-modal')">Back</button>
-                    <button class="modal-btn btn-save" onclick="confirmAddFood()">Add to Diary</button>
+                    <button class="modal-btn btn-delete" onclick="deleteRecipe()">Delete</button>
+                    <button class="modal-btn btn-cancel" onclick="closeModal('recipe-view-modal')">Close</button>
+                </div>
+                <input type="hidden" id="view-recipe-id">
+            </div>
+        </div>
+
+        <!-- Training Add Modal -->
+        <div class="modal-overlay" id="training-add-modal">
+            <div class="modal-content">
+                <h3>Add Exercise</h3>
+                <div class="input-group">
+                    <label>Category</label>
+                    <select id="ex-category" style="width:100%; padding:12px; border-radius:10px; border:1px solid #ddd; background:#fafafa;">
+                        <option value="Strength">Strength</option>
+                        <option value="Cardio">Cardio</option>
+                        <option value="Functional">Functional</option>
+                    </select>
+                </div>
+                <div class="input-group"><label>Exercise Name</label><input type="text" id="ex-name" placeholder="e.g. Bench Press"></div>
+                
+                <div class="input-row">
+                    <div class="input-group"><label>Reps / Sets</label><input type="text" id="ex-reps" placeholder="e.g. 3x10"></div>
+                    <div class="input-group"><label>Weight (kg)</label><input type="number" id="ex-weight" placeholder="0"></div>
+                </div>
+                
+                <div class="input-group"><label>Duration (mins)</label><input type="number" id="ex-duration" placeholder="e.g. 15 (Optional)"></div>
+                <div class="input-group"><label>Notes</label><input type="text" id="ex-notes" placeholder="e.g. Focus on slow eccentric"></div>
+                
+                <div class="modal-actions">
+                    <button class="modal-btn btn-cancel" onclick="closeModal('training-add-modal')">Cancel</button>
+                    <button class="modal-btn btn-save" onclick="saveExercise()">Save</button>
                 </div>
             </div>
         </div>
+
+        <!-- Body Stats Edit Modal -->
+        <div class="modal-overlay" id="body-stats-modal">
+            <div class="modal-content">
+                <h3>Edit Body Analysis</h3>
+                <!-- Stats Inputs... -->
+                <details style="margin-bottom:15px; border:1px solid #ddd; border-radius:10px; padding:10px; background:#fafafa;">
+                    <summary style="font-weight:bold; cursor:pointer; color:#0071d3;">General Values</summary>
+                    <div class="input-row" style="margin-top:10px;"><div class="input-group"><label>Height</label><input type="number" id="input-height"></div><div class="input-group"><label>Weight</label><input type="number" id="input-weight"></div></div>
+                    <div class="input-row"><div class="input-group"><label>Body Fat %</label><input type="number" id="input-bodyFat"></div><div class="input-group"><label>BMI</label><input type="number" id="input-bmi"></div></div>
+                    <div class="input-row"><div class="input-group"><label>Muscle Mass %</label><input type="number" id="input-muscleMass"></div><div class="input-group"><label>Fat Mass %</label><input type="number" id="input-fatMass"></div></div>
+                    <div class="input-row"><div class="input-group"><label>Visceral Fat</label><input type="number" id="input-visceralFat"></div><div class="input-group"><label>Water %</label><input type="number" id="input-water"></div></div>
+                </details>
+
+                <details style="margin-bottom:15px; border:1px solid #ddd; border-radius:10px; padding:10px; background:#fafafa;">
+                    <summary style="font-weight:bold; cursor:pointer; color:#0071d3;">Health & Metabolic</summary>
+                    <div class="input-row" style="margin-top:10px;"><div class="input-group"><label>Bio-Age</label><input type="number" id="input-bioAge"></div><div class="input-group"><label>Cell Fitness</label><input type="number" id="input-cellFitness"></div></div>
+                    <div class="input-row"><div class="input-group"><label>O2 Uptake</label><input type="number" id="input-o2uptake"></div><div class="input-group"><label>CO2 Emission</label><input type="number" id="input-co2emission"></div></div>
+                    <div class="input-row"><div class="input-group"><label>O2 Satur. %</label><input type="number" id="input-o2saturation"></div><div class="input-group"><label>Cal Req.</label><input type="number" id="input-calReq"></div></div>
+                </details>
+
+                <details style="margin-bottom:15px; border:1px solid #ddd; border-radius:10px; padding:10px; background:#fafafa;">
+                    <summary style="font-weight:bold; cursor:pointer; color:#0071d3;">Detailed / Fat Distribution</summary>
+                    <div class="input-row" style="margin-top:10px;"><div class="input-group"><label>Det. Water kg</label><input type="number" id="input-detWater"></div><div class="input-group"><label>Det. Muscle Pro</label><input type="number" id="input-detMusclePro"></div></div>
+                    <div class="input-row"><div class="input-group"><label>Passive Tissue</label><input type="number" id="input-detPassive"></div><div class="input-group"><label>Essential Fat</label><input type="number" id="input-fatEssential"></div></div>
+                    <div class="input-row"><div class="input-group"><label>Fat Reserves</label><input type="number" id="input-fatReserves"></div><div class="input-group"><label>Excess Fat</label><input type="number" id="input-fatExcess"></div></div>
+                </details>
+
+                <details style="margin-bottom:15px; border:1px solid #ddd; border-radius:10px; padding:10px; background:#fafafa;">
+                    <summary style="font-weight:bold; cursor:pointer; color:#0071d3;">Muscle Distribution (kg)</summary>
+                    <div class="input-row" style="margin-top:10px;"><div class="input-group"><label>Total</label><input type="number" id="input-musTotal"></div><div class="input-group"><label>Torso</label><input type="number" id="input-musTorso"></div></div>
+                    <div class="input-row"><div class="input-group"><label>Right Arm</label><input type="number" id="input-musRightArm"></div><div class="input-group"><label>Left Arm</label><input type="number" id="input-musLeftArm"></div></div>
+                    <div class="input-row"><div class="input-group"><label>Right Leg</label><input type="number" id="input-musRightLeg"></div><div class="input-group"><label>Left Leg</label><input type="number" id="input-musLeftLeg"></div></div>
+                </details>
+
+                <details style="margin-bottom:15px; border:1px solid #ddd; border-radius:10px; padding:10px; background:#fafafa;">
+                    <summary style="font-weight:bold; cursor:pointer; color:#0071d3;">Visceral & Water Details</summary>
+                    <div class="input-row" style="margin-top:10px;"><div class="input-group"><label>Visceral kg</label><input type="number" id="input-visceralKg"></div><div class="input-group"><label>Water kg</label><input type="number" id="input-waterKg"></div></div>
+                    <div class="input-row"><div class="input-group"><label>Intra Water kg</label><input type="number" id="input-waterBalIntra"></div><div class="input-group"><label>Extra Water kg</label><input type="number" id="input-waterBalExtra"></div></div>
+                    <div class="input-group"><label>Water Balance %</label><input type="number" id="input-waterBalPct"></div>
+                </details>
+
+                <div class="modal-actions">
+                    <button class="modal-btn btn-cancel" onclick="closeModal('body-stats-modal')">Cancel</button>
+                    <button class="modal-btn btn-save" onclick="saveBodyStats()">Save Values</button>
+                </div>
+            </div>
+        </div>
+
     </div>
 
-    <!-- JavaScript einbinden -->
-    <script src="app.js"></script>
+    <!-- WICHTIG: type="module" hinzugefügt für Firebase -->
+    <script type="module" src="app.js"></script>
 </body>
 </html>
